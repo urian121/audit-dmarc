@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Auditoría Dmarc // auditoría de correo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+</head>
+<body class="min-h-screen font-mono text-zinc-300 antialiased">
+
+  <div class="fixed inset-0 bg-grid pointer-events-none"></div>
+
+  <div class="relative">
+
+    <!-- Header -->
+    <header class="border-b border-zinc-800/80">
+      <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_2px_rgba(52,211,153,0.6)]"></span>
+          <span class="text-sm tracking-[0.2em] text-zinc-200 uppercase">api-dmarc</span>
+        </div>
+        <span class="text-[11px] text-zinc-600 tracking-wide hidden sm:inline">SPF · DMARC · MX · DNSSEC · MTA-STS · TLS-RPT · BIMI</span>
+      </div>
+    </header>
+
+    <!-- Hero / buscador -->
+    <section class="max-w-5xl mx-auto px-6 pt-16 pb-10">
+      <h1 class="text-2xl sm:text-3xl text-zinc-100 tracking-tight">
+        Auditoría de autenticación de correo<span class="text-emerald-400 cursor">_</span>
+      </h1>
+      <p class="mt-3 text-sm text-zinc-500 max-w-xl leading-relaxed">
+        Ingresa un dominio y consulta en tiempo real el estado de sus registros de seguridad de correo contra DNS.
+      </p>
+
+      <form id="check-form" class="mt-8 flex flex-col sm:flex-row gap-3" autocomplete="off">
+        <div class="flex-1 flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded-md px-4 py-3 focus-within:border-emerald-500/60 transition-colors">
+          <span class="text-emerald-500 select-none">$</span>
+          <input
+            id="domain-input"
+            type="text"
+            placeholder="tudominio.com"
+            class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm"
+          />
+        </div>
+        <button
+          id="submit-btn"
+          type="submit"
+          class="px-6 py-3 rounded-md bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 text-sm font-semibold tracking-wide transition-colors"
+        >
+          Analizar
+        </button>
+      </form>
+      <p id="form-error" class="mt-2 text-xs text-rose-400 hidden"></p>
+    </section>
+
+    <!-- Estado de carga -->
+    <section id="loading" class="max-w-5xl mx-auto px-6 pb-6 hidden">
+      <div class="flex items-center gap-3 text-sm text-zinc-500">
+        <span class="flex gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.3s]"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.15s]"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce"></span>
+        </span>
+        <span>resolviendo registros DNS de <span id="loading-domain" class="text-zinc-300"></span>…</span>
+      </div>
+    </section>
+
+    <!-- Resumen -->
+    <section id="summary" class="max-w-5xl mx-auto px-6 pb-4 hidden rise"></section>
+
+    <!-- Resultados -->
+    <section id="results" class="max-w-5xl mx-auto px-6 pb-10 grid grid-cols-1 md:grid-cols-2 gap-4"></section>
+
+    <footer class="border-t border-zinc-800/80">
+      <div class="max-w-5xl mx-auto px-6 py-5 text-[11px] text-zinc-600 flex flex-col sm:flex-row gap-1 sm:justify-between">
+        <span>Motor de validación: checkdmarc + dkimpy</span>
+        <span>DKIM se prueba contra una lista de selectores comunes</span>
+      </div>
+    </footer>
+
+  </div>
+
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+</body>
+</html>

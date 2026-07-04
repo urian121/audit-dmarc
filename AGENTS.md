@@ -11,12 +11,11 @@ Proyecto en etapa inicial. Solo existen `app.py`, `requirements.txt`, `AGENTS.md
 
 Implementado:
 
-* `GET /` — endpoint de prueba.
-* `GET /api/check/<domain>` — llama a `checkdmarc.check_domains()` y devuelve el resultado crudo.
+* `GET /` — sirve el frontend (`templates/index.html`, con `static/css/home.css` y `static/js/home.js`).
+* `GET /api/check/<domain>` — llama a `checkdmarc.check_domains()`, agrega el resultado de DKIM (ver abajo) y devuelve todo junto.
+* Chequeo de DKIM con `dkimpy`: como `checkdmarc` no reporta DKIM, se prueba una lista de selectores comunes (`default`, `selector1`, `selector2`, `google`, `k1`, `k2`, `s1`, `s2`, `dkim`, `mail`) contra `<selector>._domainkey.<domain>` usando `dkim.get_txt` y `dkim.load_pk_from_dns`. También acepta un selector adicional vía `?selector=`.
 
-Pendiente (todo lo demás descrito en este documento): resto de endpoints por protocolo, integración de `dkimpy` para DKIM, arquitectura por capas, manejo de excepciones, logging, validación de parámetros y Docker.
-
-Limitación conocida: `checkdmarc.check_domains()` no incluye DKIM entre sus resultados (solo `domain`, `base_domain`, `dnssec`, `soa`, `ns`, `mx`, `spf`, `dmarc`, `smtp_tls_reporting`, `mta_sts`, `bimi`), por lo que DKIM debe cubrirse íntegramente con `dkimpy`.
+Pendiente (todo lo demás descrito en este documento): resto de endpoints por protocolo, arquitectura por capas, manejo de excepciones, logging, validación de parámetros y Docker.
 
 ---
 
