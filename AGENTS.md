@@ -5,15 +5,37 @@
 * Responder siempre en español.
 * Respuestas directas y concisas, sin rodeos.
 
+## Reglas de código
+
+* Cada función o método debe llevar un comentario de una línea (docstring) explicando qué hace.
+* No dejar que `app.py` acumule lógica de negocio: la validación/consulta de dominios va en `services/`, los helpers puros (sin dependencias de Flask ni de checkdmarc/dkimpy) van en `utils/`. `app.py` sólo define rutas y arma la respuesta.
+
+## Reglas de frontend
+
+* Evitar JavaScript "puro"/manual para la interactividad de la UI (fetch + manipulación de DOM a mano).
+* Usar [htmx](https://htmx.org/) para peticiones AJAX, swapping parcial del DOM, indicadores de carga y validación de formularios. Documentación: [htmx.org/docs](https://htmx.org/docs/)
+* El servidor debe responder con fragmentos HTML renderizados (Jinja2, en `templates/partials/`) a las rutas que consume htmx — no JSON. El JSON queda reservado para la API REST pública (`/api/...`).
+* Si hace falta algo de lógica puntual en el cliente, preferir atributos `hx-on:` o `hx-*` declarativos antes que añadir un archivo `.js` nuevo.
+
 ## Estado actual
 
-Proyecto en etapa inicial. Solo existen `app.py`, `requirements.txt`, `AGENTS.md` y `README.md` — todavía no hay estructura por capas (`routes/`, `services/`, `models/`, `utils/`, `exceptions/`, `tests/`).
+Proyecto en etapa inicial. Ya existe una separación básica por capas; todavía faltan `routes/` (Blueprints), `models/`, `exceptions/` y `tests/`.
+
+Estructura actual:
+
+* `app.py` — sólo define las rutas Flask y delega el trabajo a `services/`.
+* `services/checkdmarc_service.py` — lógica de negocio: corre `checkdmarc` y el chequeo de DKIM.
+* `services/card_builder.py` — convierte el resultado crudo en las "cards" que consume la plantilla (clasificación ok/warn/fail, severidad de ausencia, etc.).
+* `utils/domain_validation.py` y `utils/formatting.py` — helpers puros (validar formato de dominio, aplanar valores de tags DMARC, etc.) sin lógica de negocio.
+* Cada función/método tiene un comentario de una línea (docstring) explicando qué hace — mantenerlo así en el código nuevo.
 
 Implementado:
 
-* `GET /` — sirve el frontend (`templates/index.html`, con `static/css/home.css` y `static/js/home.js`).
-* `GET /api/check/<domain>` — llama a `checkdmarc.check_domains()`, agrega el resultado de DKIM (ver abajo) y devuelve todo junto.
-* Chequeo de DKIM con `dkimpy`: como `checkdmarc` no reporta DKIM, se prueba una lista de selectores comunes (`default`, `selector1`, `selector2`, `google`, `k1`, `k2`, `s1`, `s2`, `dkim`, `mail`) contra `<selector>._domainkey.<domain>` usando `dkim.get_txt` y `dkim.load_pk_from_dns`. También acepta un selector adicional vía `?selector=`.
+* `GET /` — sirve el frontend (`templates/index.html`); si recibe `?domain=`, renderiza el resultado en el propio HTML (SSR).
+* `POST /check` — endpoint HTML consumido por htmx (`hx-post` del formulario, `domain`/`selector` como campos del form). Devuelve el fragmento `templates/partials/check_result.html` renderizado. La URL del navegador se queda en `/` (a propósito, no se usa `HX-Push-Url`).
+* `GET /api/check/<domain>` — API JSON: llama a `checkdmarc.check_domains()`, agrega el resultado de DKIM (ver abajo) y devuelve todo junto.
+* Chequeo de DKIM con `dkimpy` (`services/checkdmarc_service.py`): como `checkdmarc` no reporta DKIM, se prueba una lista de selectores comunes (`default`, `selector1`, `selector2`, `google`, `k1`, `k2`, `s1`, `s2`, `dkim`, `mail`) contra `<selector>._domainkey.<domain>` usando `dkim.get_txt` y `dkim.load_pk_from_dns`. También acepta un selector adicional vía `?selector=`.
+* Severidad de MTA-STS, TLS-RPT y BIMI (`SOFT_ABSENCE_KEYS` en `services/card_builder.py`): `checkdmarc` no distingue "el registro no existe" de "existe pero está mal" (ambos casos llegan como el mismo `{error, valid:false}`); la única pista es que el texto de `error` contiene "does not exist". Por eso, para estos tres protocolos opcionales, la ausencia del registro se muestra como ADVERTENCIA y no como FALLA — un SPF/DMARC ausente sigue siendo FALLA porque son protocolos base, no opcionales.
 
 Pendiente (todo lo demás descrito en este documento): resto de endpoints por protocolo, arquitectura por capas, manejo de excepciones, logging, validación de parámetros y Docker.
 
@@ -32,6 +54,7 @@ El servicio debe ser modular, escalable y desacoplado, de forma que posteriormen
 * checkdmarc
 * dkimpy
 * dnspython
+* htmx (frontend, vía CDN)
 
 
 ## Librerías base

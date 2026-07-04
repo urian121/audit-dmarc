@@ -1,0 +1,151 @@
+{% macro render_card(card) %}
+<div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-xs tracking-[0.15em] text-zinc-400 uppercase">{{ card.title }}</h3>
+    <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 {{ card.badge_cls }}">{{ card.badge_label }}</span>
+  </div>
+
+  {% if card.kind == 'empty' %}
+    <p class="text-[11px] text-zinc-600">sin datos</p>
+
+  {% elif card.kind == 'error' %}
+    <p class="text-[11px] text-rose-400">{{ card.message }}</p>
+
+  {% elif card.kind == 'text' %}
+    <p class="text-[11px] text-zinc-400">{{ card.text }}</p>
+
+  {% elif card.kind == 'record' %}
+    {% if card.record %}
+      <pre class="record mt-2 overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ card.record }}</pre>
+    {% endif %}
+    {% if card.kv %}
+      <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2">
+        {% for k, v in card.kv.items() %}
+          <span class="text-zinc-600">{{ k }}</span>
+          <span class="text-zinc-300 truncate">{{ v }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if card.tags %}
+      <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2 pt-2 border-t border-zinc-800/60">
+        {% for k, v in card.tags.items() %}
+          <span class="text-zinc-600">{{ k }}</span>
+          <span class="text-zinc-300 truncate">{{ v }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if card.policy_kv %}
+      <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2">
+        {% for k, v in card.policy_kv.items() %}
+          <span class="text-zinc-600">{{ k }}</span>
+          <span class="text-zinc-300 truncate">{{ v }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if card.policy_mx %}
+      <div class="flex flex-wrap gap-1.5 mt-2">
+        {% for m in card.policy_mx %}
+          <span class="text-[11px] bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-zinc-300">{{ m }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if card.warnings %}
+      <ul class="mt-2 space-y-1 text-[11px] text-amber-400/90 list-disc list-inside">
+        {% for w in card.warnings %}<li>{{ w }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% if not card.record and not card.kv and not card.tags and not card.policy_kv and not card.policy_mx and not card.warnings %}
+      <p class="text-[11px] text-zinc-600">sin registro publicado</p>
+    {% endif %}
+
+  {% elif card.kind == 'list' %}
+    <div class="flex flex-wrap gap-1.5">
+      {% for h in card.hostnames %}
+        <span class="text-[11px] bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-zinc-300">{{ h }}</span>
+      {% else %}
+        <span class="text-[11px] text-zinc-600">sin nameservers</span>
+      {% endfor %}
+    </div>
+    {% if card.warnings %}
+      <ul class="mt-2 space-y-1 text-[11px] text-amber-400/90 list-disc list-inside">
+        {% for w in card.warnings %}<li>{{ w }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+
+  {% elif card.kind == 'mx' %}
+    <div class="mt-1">
+      {% for h in card.hosts %}
+        <div class="flex items-center justify-between gap-2 py-1 border-b border-zinc-800/60 last:border-0">
+          <span class="text-[11px] text-zinc-300 truncate">{{ h.hostname }} <span class="text-zinc-600">(prio {{ h.preference }})</span></span>
+          <span class="flex gap-1 shrink-0">
+            {% for flag_name, flag_val in h.flags %}
+              <span class="text-[10px] px-1.5 py-0.5 rounded border {{ 'border-emerald-500/30 text-emerald-400' if flag_val else 'border-zinc-700 text-zinc-600' }}">{{ flag_name }}</span>
+            {% endfor %}
+          </span>
+        </div>
+      {% else %}
+        <p class="text-[11px] text-zinc-600">sin registros MX</p>
+      {% endfor %}
+    </div>
+    {% if card.warnings %}
+      <ul class="mt-2 space-y-1 text-[11px] text-amber-400/90 list-disc list-inside">
+        {% for w in card.warnings %}<li>{{ w }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+
+  {% elif card.kind == 'soa' %}
+    {% if card.record %}
+      <pre class="record mt-2 overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ card.record }}</pre>
+    {% endif %}
+    {% if card.kv %}
+      <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2">
+        {% for k, v in card.kv.items() %}
+          <span class="text-zinc-600">{{ k }}</span>
+          <span class="text-zinc-300 truncate">{{ v }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if not card.record and not card.kv %}
+      <p class="text-[11px] text-zinc-600">sin datos</p>
+    {% endif %}
+
+  {% elif card.kind == 'dkim' %}
+    {% if card.found %}
+      {% for e in card.found %}
+        <div class="py-1.5 border-b border-zinc-800/60 last:border-0">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] text-zinc-300">{{ e.selector }}._domainkey</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded border {{ 'border-emerald-500/30 text-emerald-400' if e.valid else 'border-rose-500/30 text-rose-400' }}">
+              {% if e.valid %}{{ (e.key_type ~ ' ' ~ (e.key_size or ''))|trim }}{% else %}inválido{% endif %}
+            </span>
+          </div>
+          {% if e.error %}<p class="text-[11px] text-rose-400 mt-1">{{ e.error }}</p>{% endif %}
+          {% if e.record %}<pre class="record mt-2 overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ e.record }}</pre>{% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-[11px] text-zinc-500 leading-relaxed">Ningún selector común publica un registro DKIM. El dominio podría usar un selector personalizado fuera de este análisis.</p>
+    {% endif %}
+    {% if card.not_found %}
+      <p class="text-[10px] text-zinc-700 mt-2">selectores probados sin resultado: {{ card.not_found|join(', ') }}</p>
+    {% endif %}
+  {% endif %}
+</div>
+{% endmacro %}
+
+<div class="rise flex flex-wrap items-center gap-4 text-xs border border-zinc-800 rounded-md px-4 py-3 bg-zinc-900/40 mb-4">
+  <span class="text-zinc-200">{{ result_domain }}</span>
+  <span class="text-zinc-700">/</span>
+  <span class="text-zinc-500">{{ base_domain }}</span>
+  <span class="ml-auto flex items-center gap-3">
+    <span class="text-emerald-400">{{ summary.ok }} ok</span>
+    <span class="text-amber-400">{{ summary.warn }} advertencias</span>
+    <span class="text-rose-400">{{ summary.fail }} fallas</span>
+  </span>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {% for card in cards %}
+    {{ render_card(card) }}
+  {% endfor %}
+</div>

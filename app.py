@@ -1,60 +1,68 @@
 from flask import Flask, jsonify, render_template, request
-from checkdmarc import check_domains
-import dkim
+
+from services.card_builder import build_cards, build_summary
+from services.checkdmarc_service import run_check
+from utils.domain_validation import is_valid_domain
 
 app = Flask(__name__)
 
-COMMON_DKIM_SELECTORS = [
-    "default", "selector1", "selector2", "google", "k1", "k2",
-    "s1", "s2", "dkim", "mail",
-]
 
-
-def check_dkim(domain, selectors):
-    results = []
-    for selector in selectors:
-        name = f"{selector}._domainkey.{domain}".encode("ascii")
-        entry = {"selector": selector, "found": False}
-        try:
-            record_bytes = dkim.get_txt(name)
-        except dkim.DKIMException as error:
-            entry["error"] = str(error)
-            results.append(entry)
-            continue
-
-        if record_bytes:
-            entry["found"] = True
-            entry["record"] = record_bytes.decode("utf-8", errors="replace")
-            try:
-                _pk, keysize, ktag, _seqtlsrpt = dkim.load_pk_from_dns(
-                    name, dnsfunc=dkim.get_txt
-                )
-                entry["valid"] = True
-                entry["key_type"] = ktag.decode() if isinstance(ktag, bytes) else ktag
-                entry["key_size"] = keysize
-            except dkim.DKIMException as error:
-                entry["valid"] = False
-                entry["error"] = str(error)
-        results.append(entry)
-    return results
+def render_result(domain, extra_selector=None):
+    """Corre la auditoría del dominio y renderiza el fragmento HTML de resultados."""
+    data = run_check(domain, extra_selector)
+    return render_template(
+        "partials/check_result.html",
+        cards=build_cards(data),
+        summary=build_summary(data),
+        result_domain=data.get("domain"),
+        base_domain=data.get("base_domain"),
+    )
 
 
 @app.route("/", methods=["GET"])
 def inicio():
-    return render_template("index.html")
+    """Sirve la página principal; si viene ?domain=, renderiza el resultado directamente (SSR)."""
+    domain = request.args.get("domain", "").strip().lower()
+    context = {"domain": domain}
+    if domain:
+        if not is_valid_domain(domain):
+            context["error"] = "Ingresa un dominio válido, por ejemplo: tudominio.com"
+        else:
+            try:
+                context["result_html"] = render_result(domain)
+            except Exception as error:
+                context["error"] = f"No se pudo completar el análisis: {error}"
+    return render_template("index.html", **context)
+
+
+@app.route("/check", methods=["POST"])
+def check_partial():
+    """Endpoint HTML consumido por htmx (hx-post) — devuelve un fragmento renderizado."""
+    domain = request.form.get("domain", "").strip().lower()
+    selector = request.form.get("selector") or None
+
+    if not is_valid_domain(domain):
+        return render_template(
+            "partials/error.html",
+            message="Ingresa un dominio válido, por ejemplo: tudominio.com",
+        )
+
+    try:
+        return render_result(domain, selector)
+    except Exception as error:
+        return render_template(
+            "partials/error.html",
+            message=f"No se pudo completar el análisis: {error}",
+        )
 
 
 @app.route("/api/check/<domain>", methods=["GET"])
 def check(domain):
-    result = check_domains([domain])
-
-    selectors = list(COMMON_DKIM_SELECTORS)
+    """API JSON: ejecuta la auditoría del dominio indicado y la devuelve completa."""
     custom_selector = request.args.get("selector")
-    if custom_selector and custom_selector not in selectors:
-        selectors.append(custom_selector)
-
-    result["dkim"] = check_dkim(domain, selectors)
+    result = run_check(domain, custom_selector)
     return jsonify(result)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

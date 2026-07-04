@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Auditoría Dmarc // auditoría de correo</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+  integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+  crossorigin="anonymous"
+></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
 </head>
 <body class="min-h-screen font-mono text-zinc-300 antialiased">
@@ -14,13 +19,13 @@
   <div class="relative">
 
     <!-- Header -->
-    <header class="border-b border-zinc-800/80">
+    <header class="border-zinc-800/80">
       <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
           <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_2px_rgba(52,211,153,0.6)]"></span>
           <span class="text-sm tracking-[0.2em] text-zinc-200 uppercase">api-dmarc</span>
         </div>
-        <span class="text-[11px] text-zinc-600 tracking-wide hidden sm:inline">SPF · DMARC · MX · DNSSEC · MTA-STS · TLS-RPT · BIMI</span>
+        <span class="text-[11px] text-zinc-600 tracking-wide hidden sm:inline">SPF · DMARC · DKIM · MX · DNSSEC · MTA-STS · TLS-RPT · BIMI</span>
       </div>
     </header>
 
@@ -33,13 +38,27 @@
         Ingresa un dominio y consulta en tiempo real el estado de sus registros de seguridad de correo contra DNS.
       </p>
 
-      <form id="check-form" class="mt-8 flex flex-col sm:flex-row gap-3" autocomplete="off">
+      <form
+        id="check-form"
+        class="mt-8 flex flex-col sm:flex-row gap-3"
+        autocomplete="off"
+        hx-post="/check"
+        hx-target="#results-wrapper"
+        hx-swap="innerHTML"
+        hx-indicator="#loading"
+        hx-disabled-elt="#submit-btn"
+      >
         <div class="flex-1 flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded-md px-4 py-3 focus-within:border-emerald-500/60 transition-colors">
           <span class="text-emerald-500 select-none">$</span>
           <input
             id="domain-input"
+            name="domain"
             type="text"
+            required
+            pattern="^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))+$"
+            title="Ingresa un dominio válido, por ejemplo: tudominio.com"
             placeholder="tudominio.com"
+            value="{{ domain }}"
             class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm"
           />
         </div>
@@ -51,26 +70,41 @@
           Analizar
         </button>
       </form>
-      <p id="form-error" class="mt-2 text-xs text-rose-400 hidden"></p>
-    </section>
 
-    <!-- Estado de carga -->
-    <section id="loading" class="max-w-5xl mx-auto px-6 pb-6 hidden">
-      <div class="flex items-center gap-3 text-sm text-zinc-500">
-        <span class="flex gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.3s]"></span>
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.15s]"></span>
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce"></span>
-        </span>
-        <span>resolviendo registros DNS de <span id="loading-domain" class="text-zinc-300"></span>…</span>
+      <!-- Indicador de carga: htmx agrega htmx-request a #loading mientras la petición está en curso -->
+      <div id="loading" class="htmx-indicator scan-panel mt-6 rounded-md border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+        <div class="flex items-center gap-2 px-3.5 py-2.5 border-b border-zinc-800/70 bg-zinc-950/50">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-400/80"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400/80"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400/80"></span>
+          <span class="ml-1.5 text-[10px] tracking-[0.2em] text-zinc-500 uppercase">auditoría en curso</span>
+          <span class="ml-auto flex items-center gap-1.5 text-[10px] tracking-[0.2em] text-emerald-400 uppercase">
+            <span class="scan-live-dot w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            live
+          </span>
+        </div>
+        <div class="flex items-center gap-5 px-4 py-4">
+          <span class="scan-ring shrink-0"></span>
+          <ul class="scan-log text-[11px] text-zinc-500">
+            <li style="--d:0s">resolviendo NS, SOA y DNSSEC</li>
+            <li style="--d:.3s">consultando MTA-STS y MX</li>
+            <li style="--d:.6s">consultando SPF</li>
+            <li style="--d:.9s">consultando DMARC</li>
+            <li style="--d:1.2s">probando selectores DKIM</li>
+            <li style="--d:1.5s">verificando TLS-RPT y BIMI</li>
+          </ul>
+        </div>
       </div>
     </section>
 
-    <!-- Resumen -->
-    <section id="summary" class="max-w-5xl mx-auto px-6 pb-4 hidden rise"></section>
-
-    <!-- Resultados -->
-    <section id="results" class="max-w-5xl mx-auto px-6 pb-10 grid grid-cols-1 md:grid-cols-2 gap-4"></section>
+    <!-- Resultados: renderizados por el servidor (SSR en / y fragmentos htmx en /check) -->
+    <section id="results-wrapper" class="max-w-5xl mx-auto px-6 pb-10">
+      {% if error %}
+        {% include "partials/error.html" %}
+      {% elif result_html %}
+        {{ result_html | safe }}
+      {% endif %}
+    </section>
 
     <footer class="border-t border-zinc-800/80">
       <div class="max-w-5xl mx-auto px-6 py-5 text-[11px] text-zinc-600 flex flex-col sm:flex-row gap-1 sm:justify-between">
@@ -81,6 +115,5 @@
 
   </div>
 
-<script src="{{ url_for('static', filename='js/home.js') }}"></script>
 </body>
 </html>
