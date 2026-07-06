@@ -1,8 +1,16 @@
+import os
+
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 
 from services.card_builder import build_cards, build_summary
 from services.checkdmarc_service import run_check
 from utils.domain_validation import is_valid_domain
+
+# Sólo tiene efecto en local: .env está en .gitignore, así que Railway (que
+# despliega desde el repo de GitHub) nunca ve este archivo. Las variables de
+# producción se definen en el dashboard de Railway, no acá.
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -65,4 +73,9 @@ def check(domain):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Railway (y la mayoría de PaaS) inyectan el puerto real en $PORT y sólo
+    # enrutan tráfico a 0.0.0.0 — escuchar en 127.0.0.1:5000 fijo no es alcanzable
+    # desde afuera del contenedor.
+    debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)

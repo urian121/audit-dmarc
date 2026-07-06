@@ -25,7 +25,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-El servidor arranca en `http://127.0.0.1:5000` en modo debug.
+El servidor escucha en `0.0.0.0` y toma el puerto de la variable de entorno `PORT` (por defecto `5000` si no está definida) — esto es lo que espera Railway y la mayoría de PaaS para poder enrutar tráfico al contenedor. El modo debug está apagado por defecto (expone el debugger de Werkzeug, un riesgo si queda accesible); para activarlo en desarrollo local, definir `FLASK_DEBUG=true`.
 
 ## Endpoints disponibles
 
