@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Auditoría Dmarc // auditoría de correo</title>
+<title>Akila - Auditoría Dmarc </title>
+<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script
   src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
@@ -23,9 +25,9 @@
       <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
           <span class="w-2 h-2 rounded-full bg-[#ef5184] shadow-[0_0_10px_2px_rgba(239,81,132,0.6)]"></span>
-          <span class="text-sm tracking-[0.2em] text-zinc-200 uppercase">Octapus-dmarc</span>
+          <span class="text-sm tracking-[0.2em] text-zinc-200 uppercase">Akila-dmarc</span>
         </div>
-        <span class="text-[11px] text-zinc-600 tracking-wide hidden sm:inline">SPF · DMARC · DKIM · MX · DNSSEC · MTA-STS · TLS-RPT · BIMI</span>
+        <span class="text-[11px] text-zinc-400 tracking-wide hidden sm:inline">SPF <span class="text-[#ef5184]">·</span> DMARC <span class="text-[#ef5184]">·</span> DKIM <span class="text-[#ef5184]">·</span> MX <span class="text-[#ef5184]">·</span> DNSSEC <span class="text-[#ef5184]">·</span> MTA-STS <span class="text-[#ef5184]">·</span> TLS-RPT <span class="text-[#ef5184]">·</span> BIMI</span>
       </div>
     </header>
 
@@ -65,8 +67,12 @@
         <button
           id="submit-btn"
           type="submit"
-          class="px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 text-sm font-semibold tracking-wide transition-colors"
+          class="px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 text-sm font-semibold tracking-wide transition-colors inline-flex items-center justify-center gap-2"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
           Analizar
         </button>
       </form>

@@ -5,7 +5,11 @@ API REST en Python + Flask (con un frontend incluido) para validar la configurac
 Este proyecto está en una etapa inicial. El objetivo completo, la arquitectura planeada y los endpoints futuros están descritos en [AGENTS.md](AGENTS.md).
 
 Demo
-![demo](demo.png)
+
+<p align="center">
+  <img src="./demo/demo-01.png" alt="Demo 1" width="45%" />
+  <img src="./demo/demo-02.png" alt="Demo 2" width="45%" />
+</p>
 
 ## Requisitos
 
