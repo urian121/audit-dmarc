@@ -1,4 +1,4 @@
-::selection { background: #10b98155; }
+::selection { background: #ff578f; }
 body { background-color: #09090b; }
 .bg-grid {
   background-image:
@@ -19,10 +19,12 @@ pre.record { scrollbar-width: thin; scrollbar-color: #3f3f46 transparent; }
 pre.record::-webkit-scrollbar { height: 6px; }
 pre.record::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 999px; }
 
-/* Indicador de carga de htmx: ver https://htmx.org/docs/#indicators */
-.htmx-indicator { opacity: 0; transition: opacity 150ms ease-in; }
+/* Indicador de carga de htmx: ver https://htmx.org/docs/#indicators.
+   display:none (no sólo opacity:0) para que no deje un hueco vacío en el
+   layout mientras no hay ninguna petición en curso. */
+.htmx-indicator { display: none; opacity: 0; transition: opacity 150ms ease-in; }
 .htmx-request.htmx-indicator,
-.htmx-request .htmx-indicator { opacity: 1; }
+.htmx-request .htmx-indicator { display: block; opacity: 1; }
 
 /* Panel "scanner" del indicador de carga. Las animaciones sólo corren
    mientras htmx tiene la petición en curso (clase .htmx-request en #loading),
@@ -33,7 +35,7 @@ pre.record::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 999px;
   width: 56px;
   height: 56px;
   border-radius: 9999px;
-  background: conic-gradient(from 0deg, #34d399 0deg, rgba(52, 211, 153, 0.08) 300deg, #34d399 360deg);
+  background: conic-gradient(from 0deg, #ef5184 0deg, rgba(239, 81, 132, 0.08) 300deg, #ef5184 360deg);
   transition: opacity 150ms ease-in;
 }
 .scan-ring::after {
@@ -51,7 +53,7 @@ pre.record::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 999px;
   transition: opacity 150ms ease-in;
 }
 .scan-log li + li { margin-top: .3rem; }
-.scan-log li::before { content: '▸ '; color: #34d399; }
+.scan-log li::before { content: '▸ '; color: #ef5184; }
 .htmx-request .scan-log li {
   animation: scan-pulse 1.8s ease-in-out infinite;
   animation-delay: var(--d, 0s);

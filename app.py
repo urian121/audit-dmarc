@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 
+from services.ai_summary import generate_summary
 from services.card_builder import build_cards, build_summary
 from services.checkdmarc_service import run_check
 from utils.domain_validation import is_valid_domain
@@ -16,14 +17,16 @@ app = Flask(__name__)
 
 
 def render_result(domain, extra_selector=None):
-    """Corre la auditoría del dominio y renderiza el fragmento HTML de resultados."""
+    """Corre la auditoría del dominio, pide el resumen con IA y renderiza el fragmento HTML de resultados."""
     data = run_check(domain, extra_selector)
+    cards = build_cards(data)
     return render_template(
         "partials/check_result.html",
-        cards=build_cards(data),
+        cards=cards,
         summary=build_summary(data),
         result_domain=data.get("domain"),
         base_domain=data.get("base_domain"),
+        ai_summary=generate_summary(data.get("domain") or domain, cards),
     )
 
 

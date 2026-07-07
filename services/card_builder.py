@@ -12,6 +12,48 @@ STATUS_META = {
 # una recomendación (ADVERTENCIA), no una falla como un SPF/DMARC roto.
 SOFT_ABSENCE_KEYS = ("mta_sts", "smtp_tls_reporting", "bimi")
 
+# Explicación corta de cada protocolo, mostrada bajo el título de su tarjeta.
+PROTOCOL_HELP = {
+    "DNSSEC": "Firma criptográficamente las respuestas DNS del dominio para evitar que sean falsificadas.",
+    "SPF": "Define qué servidores pueden enviar correos en nombre de este dominio.",
+    "DMARC": "Usa los resultados de SPF y DKIM para decidir si aceptar, poner en cuarentena o rechazar un correo, y para generar reportes.",
+    "DKIM": "Firma digitalmente los correos para garantizar que no fueron alterados en el camino.",
+    "MX": "Indica qué servidores reciben el correo de este dominio.",
+    "MTA-STS": "Obliga a que el correo entrante se transporte siempre por una conexión cifrada (TLS).",
+    "TLS-RPT": "Recibe reportes cuando falla el cifrado TLS al entregar correo a este dominio.",
+    "BIMI": "Muestra el logo de la marca junto al correo, si DMARC está en cuarentena o rechazo.",
+    "Nameservers": "Servidores DNS autoritativos para este dominio.",
+}
+
+# p= / sp= de DMARC: nombre corto y explicación en lenguaje simple.
+DMARC_POLICY_LABELS = {
+    "none": ("Ninguna", "Solo monitorea, no bloquea ni pone en cuarentena ningún correo."),
+    "quarantine": ("Cuarentena", "Envía los correos sospechosos a la carpeta de spam."),
+    "reject": ("Rechazar", "Bloquea por completo los correos que no pasan la validación — la política más segura."),
+}
+
+# adkim= / aspf= de DMARC: "s" (strict) o "r" (relaxed).
+DMARC_ALIGNMENT_LABELS = {"s": "estricta", "r": "relajada"}
+
+# Calificador del mecanismo "all" al final de un registro SPF.
+SPF_ALL_LABELS = {
+    "pass": "Cualquier otro servidor puede enviar correos (+all) — configuración insegura.",
+    "neutral": "Los demás servidores no se validan (?all).",
+    "softfail": "Los demás servidores generan SoftFail (~all): se marcan como sospechosos, pero no se rechazan.",
+    "fail": "Los demás servidores son rechazados (-all) — la opción más estricta.",
+}
+
+# Cómo describir cada tipo de mecanismo SPF en lenguaje simple.
+SPF_MECHANISM_LABELS = {
+    "include": lambda value: f"{value} puede enviar correos en nombre de este dominio.",
+    "ip4": lambda value: f"El rango de IPs {value} puede enviar correos.",
+    "ip6": lambda value: f"El rango de IPs {value} puede enviar correos.",
+    "a": lambda value: f"El servidor del registro A {('(' + value + ')') if value else 'de este dominio'} puede enviar correos.",
+    "mx": lambda value: f"Los servidores de correo (MX) {('de ' + value) if value else 'de este dominio'} pueden enviar correos.",
+    "exists": lambda value: f"Se valida mediante una consulta a {value}.",
+    "ptr": lambda _value: "Se valida mediante DNS inverso (PTR) — mecanismo obsoleto, poco recomendado.",
+}
+
 
 def status_of(section):
     """Clasifica una sección del resultado de checkdmarc en ok/warn/fail/na."""
@@ -42,22 +84,26 @@ def record_status(section, soft_absence=False):
 
 
 def base_card(title, status, kind, **extra):
-    """Arma el dict base de una tarjeta: título, badge de estado y tipo de contenido."""
+    """Arma el dict base de una tarjeta: título, badge de estado, ayuda contextual y tipo de contenido."""
     label, cls = STATUS_META.get(status, STATUS_META["na"])
     return {
         "title": title, "status": status,
         "badge_label": label, "badge_cls": cls,
-        "kind": kind, **extra,
+        "kind": kind, "help_text": PROTOCOL_HELP.get(title),
+        **extra,
     }
 
 
 def record_card(title, section, soft_absence=False):
-    """Construye la tarjeta de un protocolo basado en registro DNS (SPF, DMARC, MTA-STS, TLS-RPT, BIMI)."""
+    """Construye la tarjeta de un protocolo basado en registro DNS (MTA-STS, TLS-RPT, BIMI)."""
     if not section:
         return base_card(title, "na", "empty")
     status = record_status(section, soft_absence=soft_absence)
     if section.get("error"):
-        return base_card(title, status, "error", message=section["error"])
+        message = section["error"]
+        if soft_absence and is_absence_error(message):
+            message = f"No se encontró un registro de {title} para este dominio."
+        return base_card(title, status, "error", message=message)
 
     policy = section.get("policy") or {}
     return base_card(
@@ -67,6 +113,81 @@ def record_card(title, section, soft_absence=False):
         tags={k: flatten_tag_value(v) for k, v in (section.get("tags") or {}).items()},
         policy_kv=scalar_items(policy, skip=("mx",)),
         policy_mx=policy.get("mx") or [],
+        warnings=section.get("warnings") or [],
+    )
+
+
+def dmarc_policy_explanation(label_prefix, raw_value):
+    """Traduce un valor de política DMARC (p=/sp=) a una frase en lenguaje simple."""
+    label, description = DMARC_POLICY_LABELS.get(raw_value, (raw_value, None))
+    line = f"{label_prefix}: {label}"
+    if description:
+        line += f" — {description}"
+    return line
+
+
+def dmarc_card(section):
+    """Construye la tarjeta de DMARC explicando la política (p=) en lenguaje simple."""
+    if not section:
+        return base_card("DMARC", "na", "dmarc", has_record=False)
+    status = status_of(section)
+    if section.get("error"):
+        return base_card("DMARC", status, "dmarc", has_record=False, message=section["error"])
+
+    tags = section.get("tags") or {}
+    explanations = []
+
+    if "p" in tags:
+        explanations.append(dmarc_policy_explanation("Política", flatten_tag_value(tags["p"])))
+    if tags.get("sp", {}).get("explicit"):
+        explanations.append(dmarc_policy_explanation("Política para subdominios", flatten_tag_value(tags["sp"])))
+    if "pct" in tags:
+        explanations.append(f"Aplica al {flatten_tag_value(tags['pct'])}% de los correos.")
+    if "aspf" in tags:
+        value = flatten_tag_value(tags["aspf"])
+        explanations.append(f"Alineación SPF {DMARC_ALIGNMENT_LABELS.get(value, value)}.")
+    if "adkim" in tags:
+        value = flatten_tag_value(tags["adkim"])
+        explanations.append(f"Alineación DKIM {DMARC_ALIGNMENT_LABELS.get(value, value)}.")
+    if "rua" in tags:
+        explanations.append(f"Envía reportes agregados a: {flatten_tag_value(tags['rua'])}")
+    if "ruf" in tags:
+        explanations.append(f"Envía reportes forenses a: {flatten_tag_value(tags['ruf'])}")
+
+    return base_card(
+        "DMARC", status, "dmarc",
+        has_record=True,
+        record=section.get("record"),
+        explanations=explanations,
+        warnings=section.get("warnings") or [],
+    )
+
+
+def spf_card(section):
+    """Construye la tarjeta de SPF explicando en lenguaje simple quién puede enviar correo."""
+    if not section:
+        return base_card("SPF", "na", "spf", has_record=False)
+    status = status_of(section)
+    if section.get("error"):
+        return base_card("SPF", status, "spf", has_record=False, message=section["error"])
+
+    parsed = section.get("parsed") or {}
+    explanations = []
+    for mechanism in parsed.get("mechanisms") or []:
+        kind = mechanism.get("mechanism")
+        value = mechanism.get("value") or ""
+        describe = SPF_MECHANISM_LABELS.get(kind)
+        explanations.append(describe(value) if describe else f"{kind} {value}".strip())
+
+    all_qualifier = parsed.get("all")
+    if all_qualifier:
+        explanations.append(SPF_ALL_LABELS.get(all_qualifier, f"Calificador 'all' desconocido: {all_qualifier}"))
+
+    return base_card(
+        "SPF", status, "spf",
+        has_record=True,
+        record=section.get("record"),
+        explanations=explanations,
         warnings=section.get("warnings") or [],
     )
 
@@ -92,11 +213,25 @@ def ns_card(section):
     )
 
 
+def visible_mx_warnings(section):
+    """Filtra los warnings de MX descartando el ruido de DNS inverso (PTR): suele ser de la infraestructura del proveedor de correo (ej. Google), no del dominio auditado."""
+    return [w for w in (section.get("warnings") or []) if "reverse dns" not in w.lower()]
+
+
+def mx_status(section):
+    """Estado de MX basado sólo en los warnings que realmente se muestran (sin el ruido de PTR)."""
+    if not section:
+        return "na"
+    if section.get("error"):
+        return "fail"
+    return "warn" if visible_mx_warnings(section) else "ok"
+
+
 def mx_card(section):
     """Construye la tarjeta de MX, incluyendo los flags booleanos de cada host (ej. dnssec)."""
     if not section:
         return base_card("MX", "na", "empty")
-    status = status_of(section)
+    status = mx_status(section)
     if section.get("error"):
         return base_card("MX", status, "error", message=section["error"])
     hosts = []
@@ -107,21 +242,7 @@ def mx_card(section):
             "preference": h.get("preference", "—"),
             "flags": flags,
         })
-    return base_card("MX", status, "mx", hosts=hosts, warnings=section.get("warnings") or [])
-
-
-def soa_card(section):
-    """Construye la tarjeta de SOA."""
-    if not section:
-        return base_card("SOA", "na", "empty")
-    status = status_of(section)
-    if section.get("error"):
-        return base_card("SOA", status, "error", message=section["error"])
-    return base_card(
-        "SOA", status, "soa",
-        record=section.get("record"),
-        kv=scalar_items(section.get("values") or {}),
-    )
+    return base_card("MX", status, "mx", hosts=hosts, warnings=visible_mx_warnings(section))
 
 
 def dkim_status(entries):
@@ -140,9 +261,11 @@ def dkim_card(entries):
     """Construye la tarjeta de DKIM con los selectores encontrados y los que no dieron resultado."""
     entries = entries or []
     status = dkim_status(entries)
+    found = [e for e in entries if e.get("found")]
     return base_card(
         "DKIM", status, "dkim",
-        found=[e for e in entries if e.get("found")],
+        has_record=bool(found),
+        found=found,
         not_found=[e["selector"] for e in entries if not e.get("found")],
     )
 
@@ -151,22 +274,21 @@ def build_cards(data):
     """Arma la lista completa de tarjetas (una por protocolo) para renderizar en la plantilla."""
     return [
         dnssec_card(data.get("dnssec")),
-        record_card("SPF", data.get("spf")),
-        record_card("DMARC", data.get("dmarc")),
+        spf_card(data.get("spf")),
+        dmarc_card(data.get("dmarc")),
         dkim_card(data.get("dkim")),
         mx_card(data.get("mx")),
         record_card("MTA-STS", data.get("mta_sts"), soft_absence=True),
         record_card("TLS-RPT", data.get("smtp_tls_reporting"), soft_absence=True),
         record_card("BIMI", data.get("bimi"), soft_absence=True),
         ns_card(data.get("ns")),
-        soa_card(data.get("soa")),
     ]
 
 
 def build_summary(data):
     """Cuenta cuántos protocolos quedaron en ok/warn/fail para el resumen mostrado arriba de las tarjetas."""
     ok = warn = fail = 0
-    for key in ("spf", "dmarc", "mx", "ns"):
+    for key in ("spf", "dmarc", "ns"):
         s = status_of(data.get(key))
         if s == "ok":
             ok += 1
@@ -174,6 +296,14 @@ def build_summary(data):
             warn += 1
         elif s == "fail":
             fail += 1
+
+    s = mx_status(data.get("mx"))
+    if s == "ok":
+        ok += 1
+    elif s == "warn":
+        warn += 1
+    elif s == "fail":
+        fail += 1
 
     for key in SOFT_ABSENCE_KEYS:
         s = record_status(data.get(key), soft_absence=True)
@@ -195,4 +325,24 @@ def build_summary(data):
     elif s == "fail":
         fail += 1
 
-    return {"ok": ok, "warn": warn, "fail": fail}
+    total = ok + warn + fail
+
+    def pct(count):
+        """Convierte un conteo en porcentaje del total de protocolos evaluados."""
+        return round((count / total) * 100) if total else 0
+
+    # Una advertencia (protocolo opcional ausente, no roto) pesa la mitad que
+    # un ok, y una falla no suma nada — coherente con SOFT_ABSENCE_KEYS.
+    score = round(((ok + warn * 0.5) / total) * 100) if total else 0
+    if score >= 80:
+        score_color = "text-emerald-400"
+    elif score >= 50:
+        score_color = "text-amber-400"
+    else:
+        score_color = "text-rose-400"
+
+    return {
+        "ok": ok, "warn": warn, "fail": fail, "total": total,
+        "ok_pct": pct(ok), "warn_pct": pct(warn), "fail_pct": pct(fail),
+        "score": score, "score_color": score_color,
+    }

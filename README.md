@@ -27,6 +27,10 @@ python app.py
 
 El servidor escucha en `0.0.0.0` y toma el puerto de la variable de entorno `PORT` (por defecto `5000` si no está definida) — esto es lo que espera Railway y la mayoría de PaaS para poder enrutar tráfico al contenedor. El modo debug está apagado por defecto (expone el debugger de Werkzeug, un riesgo si queda accesible); para activarlo en desarrollo local, definir `FLASK_DEBUG=true`.
 
+### Resumen con IA (opcional)
+
+Si defines `OPENAI_PROJECT_API_KEY` en `.env` (ver `.env-example`), después de cada búsqueda se muestra un resumen de máximo 6 líneas generado con OpenAI sobre la salud de autenticación del dominio. Es completamente opcional: sin esa variable, la app funciona igual, sólo no aparece esa sección.
+
 ## Endpoints disponibles
 
 ### `GET /`
