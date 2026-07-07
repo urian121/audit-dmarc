@@ -48,7 +48,7 @@
         hx-target="#results-wrapper"
         hx-swap="innerHTML"
         hx-indicator="#loading"
-        hx-disabled-elt="#submit-btn"
+        hx-disabled-elt="#submit-btn, #domain-input"
       >
         <div class="flex-1 flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded-md px-4 py-3 focus-within:border-[#ef5184]/60 transition-colors">
           <span class="text-[#ef5184] select-none">$</span>
@@ -61,7 +61,7 @@
             title="Ingresa un dominio válido, por ejemplo: tudominio.com"
             placeholder="tudominio.com"
             value="{{ domain }}"
-            class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm"
+            class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
         <button
