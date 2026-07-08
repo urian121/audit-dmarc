@@ -1,0 +1,32 @@
+; Plantilla de configuración para el worker de parsedmarc (Fase 4 del plan de
+; monitoreo continuo). Copiar a `parsedmarc.ini` y completar con las
+; credenciales reales, o usar las variables de entorno PARSEDMARC_SECCION_CLAVE
+; en su lugar (recomendado en Railway, para no commitear credenciales).
+;
+; Documentación completa: https://domainaware.github.io/parsedmarc/
+; Antes de cambiar algo acá, confirmar la sintaxis exacta contra esa
+; documentación — no asumir opciones que no estén confirmadas ahí.
+
+[general]
+save_aggregate = True
+
+[mailbox]
+; watch=True usa IMAP IDLE: reacciona casi al instante cuando llega un
+; reporte nuevo, en vez de hacer polling. Este proceso debe correr como
+; servicio de larga duración (Worker en Railway), no como cron.
+watch = True
+reports_folder = INBOX
+archive_folder = Archive
+
+[imap]
+host = imap.zoho.com
+port = 993
+ssl = True
+user = reports@tudominio.com
+password =
+
+[webhook]
+; El secreto va en la URL (no en un header) porque no está confirmado que
+; parsedmarc permita agregar headers custom al webhook — ver ruta
+; /webhooks/dmarc-aggregate/<secret> en app.py, que valida ese secreto.
+aggregate_url = https://tu-app.up.railway.app/webhooks/dmarc-aggregate/CAMBIAR_POR_DMARC_WEBHOOK_SECRET

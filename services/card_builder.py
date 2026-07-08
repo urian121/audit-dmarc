@@ -1,4 +1,11 @@
-from utils.formatting import flatten_tag_value, is_absence_error, scalar_items
+from utils.formatting import (
+    flatten_tag_value,
+    friendly_error_message,
+    is_absence_error,
+    is_timeout_error,
+    scalar_items,
+    translate_warnings,
+)
 
 # Etiqueta y clases Tailwind del badge de estado que se muestra en cada tarjeta.
 STATUS_META = {
@@ -56,14 +63,20 @@ SPF_MECHANISM_LABELS = {
 
 
 def status_of(section):
-    """Clasifica una sección del resultado de checkdmarc en ok/warn/fail/na."""
+    """Clasifica una sección del resultado de checkdmarc en ok/warn/fail/na.
+
+    Un timeout de DNS siempre es 'na' (no pudimos verificar), nunca 'fail' —
+    no es evidencia de que el protocolo esté mal configurado, sólo de que la
+    consulta no respondió a tiempo.
+    """
     if section is None:
         return "na"
     if isinstance(section, bool):
         return "ok" if section else "fail"
     if isinstance(section, dict):
-        if section.get("error"):
-            return "fail"
+        error = section.get("error")
+        if error:
+            return "na" if is_timeout_error(error) else "fail"
         if section.get("valid") is False:
             return "fail"
         if section.get("warnings"):
@@ -76,8 +89,11 @@ def record_status(section, soft_absence=False):
     """Como status_of, pero permite bajar a 'warn' cuando el error es sólo ausencia del registro."""
     if not section:
         return "na"
-    if section.get("error"):
-        if soft_absence and is_absence_error(section["error"]):
+    error = section.get("error")
+    if error:
+        if is_timeout_error(error):
+            return "na"
+        if soft_absence and is_absence_error(error):
             return "warn"
         return "fail"
     return status_of(section)
@@ -100,9 +116,13 @@ def record_card(title, section, soft_absence=False):
         return base_card(title, "na", "empty")
     status = record_status(section, soft_absence=soft_absence)
     if section.get("error"):
-        message = section["error"]
-        if soft_absence and is_absence_error(message):
+        error = section["error"]
+        if is_timeout_error(error):
+            message = friendly_error_message(error)
+        elif soft_absence and is_absence_error(error):
             message = f"No se encontró un registro de {title} para este dominio."
+        else:
+            message = error
         return base_card(title, status, "error", message=message)
 
     policy = section.get("policy") or {}
@@ -113,7 +133,7 @@ def record_card(title, section, soft_absence=False):
         tags={k: flatten_tag_value(v) for k, v in (section.get("tags") or {}).items()},
         policy_kv=scalar_items(policy, skip=("mx",)),
         policy_mx=policy.get("mx") or [],
-        warnings=section.get("warnings") or [],
+        warnings=translate_warnings(section.get("warnings")),
     )
 
 
@@ -132,7 +152,7 @@ def dmarc_card(section):
         return base_card("DMARC", "na", "dmarc", has_record=False)
     status = status_of(section)
     if section.get("error"):
-        return base_card("DMARC", status, "dmarc", has_record=False, message=section["error"])
+        return base_card("DMARC", status, "dmarc", has_record=False, message=friendly_error_message(section["error"]))
 
     tags = section.get("tags") or {}
     explanations = []
@@ -159,7 +179,7 @@ def dmarc_card(section):
         has_record=True,
         record=section.get("record"),
         explanations=explanations,
-        warnings=section.get("warnings") or [],
+        warnings=translate_warnings(section.get("warnings")),
     )
 
 
@@ -169,7 +189,7 @@ def spf_card(section):
         return base_card("SPF", "na", "spf", has_record=False)
     status = status_of(section)
     if section.get("error"):
-        return base_card("SPF", status, "spf", has_record=False, message=section["error"])
+        return base_card("SPF", status, "spf", has_record=False, message=friendly_error_message(section["error"]))
 
     parsed = section.get("parsed") or {}
     explanations = []
@@ -188,7 +208,7 @@ def spf_card(section):
         has_record=True,
         record=section.get("record"),
         explanations=explanations,
-        warnings=section.get("warnings") or [],
+        warnings=translate_warnings(section.get("warnings")),
     )
 
 
@@ -205,11 +225,11 @@ def ns_card(section):
         return base_card("Nameservers", "na", "empty")
     status = status_of(section)
     if section.get("error"):
-        return base_card("Nameservers", status, "error", message=section["error"])
+        return base_card("Nameservers", status, "error", message=friendly_error_message(section["error"]))
     return base_card(
         "Nameservers", status, "list",
         hostnames=section.get("hostnames") or [],
-        warnings=section.get("warnings") or [],
+        warnings=translate_warnings(section.get("warnings")),
     )
 
 
@@ -222,8 +242,9 @@ def mx_status(section):
     """Estado de MX basado sólo en los warnings que realmente se muestran (sin el ruido de PTR)."""
     if not section:
         return "na"
-    if section.get("error"):
-        return "fail"
+    error = section.get("error")
+    if error:
+        return "na" if is_timeout_error(error) else "fail"
     return "warn" if visible_mx_warnings(section) else "ok"
 
 
@@ -233,7 +254,7 @@ def mx_card(section):
         return base_card("MX", "na", "empty")
     status = mx_status(section)
     if section.get("error"):
-        return base_card("MX", status, "error", message=section["error"])
+        return base_card("MX", status, "error", message=friendly_error_message(section["error"]))
     hosts = []
     for h in section.get("hosts") or []:
         flags = [(k, v) for k, v in h.items() if isinstance(v, bool)]
@@ -242,7 +263,7 @@ def mx_card(section):
             "preference": h.get("preference", "—"),
             "flags": flags,
         })
-    return base_card("MX", status, "mx", hosts=hosts, warnings=visible_mx_warnings(section))
+    return base_card("MX", status, "mx", hosts=hosts, warnings=translate_warnings(visible_mx_warnings(section)))
 
 
 def dkim_status(entries):

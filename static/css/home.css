@@ -19,12 +19,32 @@ pre.record { scrollbar-width: thin; scrollbar-color: #3f3f46 transparent; }
 pre.record::-webkit-scrollbar { height: 6px; }
 pre.record::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 999px; }
 
+/* Chrome/Edge pintan de blanco los inputs autocompletados (usuario/email),
+   sin importar autocomplete="off" — se fuerza el fondo oscuro con este truco. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #18181b inset;
+  -webkit-text-fill-color: #f4f4f5;
+  caret-color: #f4f4f5;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 /* Indicador de carga de htmx: ver https://htmx.org/docs/#indicators.
    display:none (no sólo opacity:0) para que no deje un hueco vacío en el
    layout mientras no hay ninguna petición en curso. */
 .htmx-indicator { display: none; opacity: 0; transition: opacity 150ms ease-in; }
 .htmx-request.htmx-indicator,
 .htmx-request .htmx-indicator { display: block; opacity: 1; }
+
+/* Mientras corre una nueva búsqueda, el resultado ANTERIOR (todavía en
+   #results-wrapper hasta que llegue la respuesta) se atenúa y se bloquea,
+   para que no se confunda con el resultado del dominio recién pedido. */
+#results-wrapper.htmx-request {
+  opacity: .3;
+  pointer-events: none;
+  transition: opacity 150ms ease-in;
+}
 
 /* Panel "scanner" del indicador de carga. Las animaciones sólo corren
    mientras htmx tiene la petición en curso (clase .htmx-request en #loading),

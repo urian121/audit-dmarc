@@ -1,0 +1,28 @@
+<header class="border-zinc-800/80">
+  <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
+    <a href="{{ url_for('inicio') }}" class="flex items-center gap-2.5">
+      <span class="w-2 h-2 rounded-full bg-[#ef5184] shadow-[0_0_10px_2px_rgba(239,81,132,0.6)]"></span>
+      <span class="text-sm tracking-[0.2em] text-zinc-200 uppercase">Akila-dmarc</span>
+    </a>
+    <div class="flex items-center gap-6">
+      <a href="{{ url_for('monitoring_register') }}" class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        Monitoreo
+      </a>
+      <a href="{{ url_for('monitoring_list') }}" class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+        Monitores
+      </a>
+    </div>
+  </div>
+</header>

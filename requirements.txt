@@ -4,3 +4,5 @@ dkimpy==1.1.8
 dnspython==2.8.0
 python-dotenv==1.2.2
 openai==2.44.0
+Flask-SQLAlchemy==3.1.1
+parsedmarc==10.2.0

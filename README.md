@@ -59,6 +59,20 @@ DKIM no tiene una ubicación fija en DNS (depende de un selector), así que se p
 curl "http://127.0.0.1:5000/api/check/example.com?selector=mi-selector"
 ```
 
+### `GET/POST /monitoring`
+
+Alta de un dominio para **monitoreo continuo**: registra el dominio en SQLite (`DATABASE_URL`, por defecto `sqlite:///monitoring.db`) y muestra el DNS exacto que hay que agregar (`rua=` apuntando a `DMARC_REPORTS_MAILBOX`) para empezar a recibir reportes DMARC reales. Devuelve un link privado (`/monitoring/<token>`) con el dashboard de ese dominio — no hay lista pública ni login, el link es el único acceso.
+
+### `POST /webhooks/dmarc-aggregate/<secret>`
+
+Recibe el JSON de un reporte DMARC agregado ya parseado por [parsedmarc](https://github.com/domainaware/parsedmarc) (configurado como servicio aparte, ver `config/parsedmarc.ini.example`). `<secret>` debe coincidir con `DMARC_WEBHOOK_SECRET`; si no, responde 404. Guarda el reporte y compara los remitentes reales contra el SPF declarado del dominio, generando una alerta por cada IP no reconocida.
+
+### `python jobs/recheck_domains.py`
+
+No es una ruta HTTP — es el job de vigilancia DNS periódica, pensado para correr como cron (ej. cada 6-12h). Reutiliza `run_check()` para cada dominio registrado, compara contra el último chequeo guardado, y genera una alerta si cambió la política DMARC, el SPF o los selectores DKIM encontrados. Al final manda por correo (SMTP, variables `SMTP_*`) todas las alertas pendientes de notificar, incluidas las de remitentes desconocidos generadas por el webhook.
+
+Ver el plan completo de esta funcionalidad (infraestructura de correo, DNS, y las 8 fases) en `AGENTS.md`.
+
 ## Roadmap
 
 Los endpoints adicionales por protocolo (`/api/spf`, `/api/dmarc`, `/api/dkim`, `/api/bimi`, `/api/mta-sts`, `/api/tls-rpt`, `/api/mx`, `/api/dnssec`, `/api/starttls`, validación en bulk, etc.) y la arquitectura por capas (routes/services/models/utils) todavía no están implementados. Ver [AGENTS.md](AGENTS.md) para el detalle completo.

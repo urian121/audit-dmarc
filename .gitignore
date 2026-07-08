@@ -7,6 +7,10 @@ instance/*
 .webassets-cache
 .env
 
+# Base de datos local de monitoreo (SQLite) y config real de parsedmarc
+*.db
+config/parsedmarc.ini
+
 ### Flask.Python Stack ###
 # Byte-compiled / optimized / DLL files
 __pycache__/

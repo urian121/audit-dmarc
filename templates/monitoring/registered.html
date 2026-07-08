@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Akila - Monitoreo continuo de DMARC</title>
+<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+</head>
+<body class="min-h-screen font-mono text-zinc-300 antialiased">
+
+  <div class="fixed inset-0 bg-grid pointer-events-none"></div>
+
+  <div class="relative">
+    {% include "partials/header.html" %}
+
+    <div class="max-w-2xl mx-auto px-6 py-16">
+    <p class="text-[11px] text-emerald-400 uppercase tracking-[0.2em] mb-2">
+      {% if already_existed %}ya estaba registrado{% else %}registrado{% endif %}
+    </p>
+    <h1 class="text-2xl text-zinc-100 tracking-tight mb-6">{{ monitored.domain }}</h1>
+
+    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
+      <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-3">Falta un paso: agrega esto a tu DMARC</h2>
+      <p class="text-[12px] text-zinc-400 leading-relaxed mb-3">
+        Para que nos lleguen los reportes de este dominio, agrega nuestra casilla al <code class="text-zinc-300">rua=</code>
+        de tu registro DMARC (podés dejar el tuyo si ya tenías uno, separado por coma):
+      </p>
+      <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">rua=mailto:{{ rua_mailbox }}</pre>
+      <p class="mt-3 text-[11px] text-zinc-600">
+        Los primeros reportes tardan entre 24 y 48 horas en llegar — es normal no ver nada todavía.
+      </p>
+    </div>
+
+    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
+      <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-3">Tu dashboard privado</h2>
+      <p class="text-[12px] text-zinc-400 leading-relaxed mb-3">
+        Guarda este link — es la única forma de volver a ver la actividad de este dominio, no hay otra pantalla de acceso.
+      </p>
+      <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ url_for('monitoring_dashboard', access_token=monitored.access_token, _external=True) }}</pre>
+    </div>
+
+    <a
+      href="{{ url_for('monitoring_dashboard', access_token=monitored.access_token) }}"
+      class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 text-zinc-950 text-sm font-semibold tracking-wide transition-colors"
+    >
+      Ir al dashboard
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0">
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+        <polyline points="12 5 19 12 12 19"></polyline>
+      </svg>
+    </a>
+    </div>
+  </div>
+
+</body>
+</html>

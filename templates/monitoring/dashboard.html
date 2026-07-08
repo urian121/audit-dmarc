@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Akila - {{ monitored.domain }} // monitoreo</title>
+<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+</head>
+<body class="min-h-screen font-mono text-zinc-300 antialiased">
+
+  <div class="fixed inset-0 bg-grid pointer-events-none"></div>
+
+  <div class="relative">
+    {% include "partials/header.html" %}
+
+    <div class="max-w-4xl mx-auto px-6 py-16">
+    <h1 class="text-2xl text-zinc-100 tracking-tight mb-1">{{ monitored.domain }}</h1>
+    <p class="text-[11px] text-zinc-600 mb-8">
+      registrado el {{ monitored.created_at.strftime('%Y-%m-%d') }} · alertas a {{ monitored.owner_email }}
+    </p>
+
+    {% if not reports %}
+    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-8">
+      <p class="text-[12px] text-zinc-500 leading-relaxed">
+        Todavía no llegó ningún reporte DMARC para este dominio. Confirma que agregaste
+        <code class="text-zinc-300">rua=mailto:{{ rua_mailbox }}</code> a tu registro DMARC —
+        los proveedores mandan reportes una vez al día, así que puede tardar 24-48h en aparecer el primero.
+      </p>
+    </div>
+    {% endif %}
+
+    <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-3">Alertas recientes</h2>
+    <div class="grid grid-cols-1 gap-3 mb-10">
+      {% for alert in alerts %}
+        <div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 {{ 'border-rose-500/30 text-rose-400 bg-rose-500/10' if alert.kind == 'unknown_sender' else 'border-amber-500/30 text-amber-400 bg-amber-500/10' }}">
+              {{ alert.kind }}
+            </span>
+            <span class="text-[10px] text-zinc-600">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+          </div>
+          <p class="text-[12px] text-zinc-300">{{ alert.message }}</p>
+        </div>
+      {% else %}
+        <p class="text-[12px] text-zinc-600">Sin alertas por ahora — buena señal.</p>
+      {% endfor %}
+    </div>
+
+    <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-3">Reportes DMARC recibidos</h2>
+    <div class="grid grid-cols-1 gap-3">
+      {% for report in reports %}
+        <div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[12px] text-zinc-200">{{ report.org_name or 'origen desconocido' }}</span>
+            <span class="text-[10px] text-zinc-600">recibido {{ report.received_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+          </div>
+          {% for record in report.records %}
+            <div class="flex items-center justify-between gap-2 py-1 border-b border-zinc-800/60 last:border-0">
+              <span class="text-[11px] text-zinc-300 truncate">
+                {{ record.source_ip }}
+                <span class="text-zinc-600">({{ record.source_asn_org or 'sin identificar' }}{% if record.source_country %}, {{ record.source_country }}{% endif %}) &times;{{ record.count }}</span>
+              </span>
+              <span class="flex gap-1 shrink-0">
+                <span class="text-[10px] px-1.5 py-0.5 rounded border {{ 'border-emerald-500/30 text-emerald-400' if record.spf_aligned else 'border-rose-500/30 text-rose-400' }}">spf</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded border {{ 'border-emerald-500/30 text-emerald-400' if record.dkim_aligned else 'border-rose-500/30 text-rose-400' }}">dkim</span>
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-[12px] text-zinc-600">Sin reportes todavía.</p>
+      {% endfor %}
+    </div>
+    </div>
+  </div>
+
+</body>
+</html>

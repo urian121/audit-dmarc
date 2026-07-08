@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Akila - Monitoreo continuo de DMARC</title>
+<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+</head>
+<body class="min-h-screen font-mono text-zinc-300 antialiased">
+
+  <div class="fixed inset-0 bg-grid pointer-events-none"></div>
+
+  <div class="relative">
+    {% include "partials/header.html" %}
+
+    <div class="max-w-2xl mx-auto px-6 py-16">
+    <h1 class="text-2xl text-zinc-100 tracking-tight mb-3">Monitoreo continuo de un dominio</h1>
+    <p class="text-sm text-zinc-500 leading-relaxed mb-8">
+      Registra un dominio para vigilarlo: te avisamos si cambia su configuración DNS de correo
+      (SPF, DMARC, DKIM) o si aparece un remitente que no está autorizado en su SPF.
+    </p>
+
+    {% if error %}
+      <p class="mb-4 text-xs text-rose-400">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" autocomplete="off" class="flex flex-col gap-3">
+      <div class="flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded-md px-4 py-3 focus-within:border-[#ef5184]/60 transition-colors">
+        <span class="text-[#ef5184] select-none">$</span>
+        <input
+          type="text"
+          name="domain"
+          required
+          pattern="^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))+$"
+          placeholder="tudominio.com"
+          value="{{ domain or '' }}"
+          class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm"
+        />
+      </div>
+      <div class="flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded-md px-4 py-3 focus-within:border-[#ef5184]/60 transition-colors">
+        <span class="text-[#ef5184] select-none">@</span>
+        <input
+          type="email"
+          name="owner_email"
+          required
+          placeholder="tu@correo.com — recibirás las alertas aquí"
+          value="{{ owner_email or '' }}"
+          class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm"
+        />
+      </div>
+      <button
+        type="submit"
+        class="mt-2 px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 text-zinc-950 text-sm font-semibold tracking-wide transition-colors inline-flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Registrar dominio
+      </button>
+    </form>
+    </div>
+  </div>
+
+</body>
+</html>

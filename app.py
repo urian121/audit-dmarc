@@ -1,11 +1,15 @@
 import os
+import secrets
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, abort, jsonify, render_template, request
 
+from models import db
 from services.ai_summary import generate_summary
 from services.card_builder import build_cards, build_summary
 from services.checkdmarc_service import run_check
+from services.monitoring_service import get_dashboard_data, list_domains, register_domain
+from services.reports_service import ingest_aggregate_report
 from utils.domain_validation import is_valid_domain
 
 # Sólo tiene efecto en local: .env está en .gitignore, así que Railway (que
@@ -14,6 +18,19 @@ from utils.domain_validation import is_valid_domain
 load_dotenv()
 
 app = Flask(__name__)
+
+# Monitoreo continuo (fases 1-7 del plan): persistencia en SQLite por defecto,
+# configurable vía DATABASE_URL para producción (ej. Postgres en Railway).
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///monitoring.db")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+
+# Casilla que recibe los reportes DMARC (se le pide al usuario que la agregue
+# a su rua=) y secreto que debe traer la URL del webhook de parsedmarc.
+DMARC_REPORTS_MAILBOX = os.environ.get("DMARC_REPORTS_MAILBOX", "reports@tudominio.com")
+DMARC_WEBHOOK_SECRET = os.environ.get("DMARC_WEBHOOK_SECRET")
 
 
 def render_result(domain, extra_selector=None):
@@ -73,6 +90,68 @@ def check(domain):
     custom_selector = request.args.get("selector")
     result = run_check(domain, custom_selector)
     return jsonify(result)
+
+
+@app.route("/monitoring", methods=["GET", "POST"])
+def monitoring_register():
+    """Formulario de alta de un dominio para monitoreo continuo (vigilancia DNS + reportes DMARC)."""
+    if request.method == "GET":
+        return render_template("monitoring/register.html")
+
+    domain = request.form.get("domain", "").strip().lower()
+    owner_email = request.form.get("owner_email", "").strip()
+
+    if not is_valid_domain(domain):
+        return render_template(
+            "monitoring/register.html",
+            error="Ingresa un dominio válido, por ejemplo: tudominio.com",
+            domain=domain, owner_email=owner_email,
+        )
+    if "@" not in owner_email:
+        return render_template(
+            "monitoring/register.html",
+            error="Ingresa un correo válido para recibir las alertas.",
+            domain=domain, owner_email=owner_email,
+        )
+
+    monitored, created = register_domain(domain, owner_email)
+    return render_template(
+        "monitoring/registered.html",
+        monitored=monitored,
+        rua_mailbox=DMARC_REPORTS_MAILBOX,
+        already_existed=not created,
+    )
+
+
+@app.route("/monitoring/lista", methods=["GET"])
+def monitoring_list():
+    """Lista pública de todos los dominios registrados para monitoreo (sin protección — decisión explícita)."""
+    return render_template("monitoring/list.html", monitored_domains=list_domains())
+
+
+@app.route("/monitoring/<access_token>", methods=["GET"])
+def monitoring_dashboard(access_token):
+    """Dashboard privado de un dominio monitoreado: reportes recibidos y alertas generadas."""
+    data = get_dashboard_data(access_token)
+    if data is None:
+        return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
+    return render_template("monitoring/dashboard.html", rua_mailbox=DMARC_REPORTS_MAILBOX, **data)
+
+
+@app.route("/webhooks/dmarc-aggregate/<secret>", methods=["POST"])
+def webhook_dmarc_aggregate(secret):
+    """Recibe el JSON de un reporte DMARC agregado ya parseado por parsedmarc (salida 'webhook' de su config)."""
+    if not DMARC_WEBHOOK_SECRET or not secrets.compare_digest(secret, DMARC_WEBHOOK_SECRET):
+        abort(404)  # 404 en vez de 401: no delatar que la ruta existe a quien no trae el secreto
+    payload = request.get_json(silent=True) or {}
+    try:
+        ingest_aggregate_report(payload)
+    except Exception as error:
+        # Nunca devolver 500 acá: un payload inesperado no debe hacer que
+        # parsedmarc reintente indefinidamente la misma entrega.
+        db.session.rollback()
+        print(f"[webhook_dmarc_aggregate] error procesando payload: {error}")
+    return jsonify({"status": "ok"}), 200
 
 
 if __name__ == "__main__":
