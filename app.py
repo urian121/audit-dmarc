@@ -8,8 +8,8 @@ from sqlalchemy import inspect, text
 from models import db
 from services.ai_summary import generate_summary
 from services.card_builder import build_cards, build_summary
-from services.checkdmarc_service import run_check
-from services.monitoring_service import get_dashboard_data, list_domains, register_domain, set_active
+from services.checkdmarc_service import build_dmarc_dns_instructions, run_check
+from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns
 from services.reports_service import ingest_aggregate_report
 from utils.domain_validation import is_valid_domain
 
@@ -38,6 +38,15 @@ with app.app_context():
             with db.engine.connect() as connection:
                 connection.execute(text(
                     "ALTER TABLE monitored_domains ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1"
+                ))
+                connection.commit()
+        if "dns_verified" not in existing_columns:
+            with db.engine.connect() as connection:
+                connection.execute(text(
+                    "ALTER TABLE monitored_domains ADD COLUMN dns_verified BOOLEAN NOT NULL DEFAULT 0"
+                ))
+                connection.execute(text(
+                    "ALTER TABLE monitored_domains ADD COLUMN dns_verified_at DATETIME"
                 ))
                 connection.commit()
 
@@ -134,7 +143,32 @@ def monitoring_register():
         monitored=monitored,
         rua_mailbox=DMARC_REPORTS_MAILBOX,
         already_existed=not created,
+        dns=build_dmarc_dns_instructions(domain, DMARC_REPORTS_MAILBOX),
     )
+
+
+@app.route("/monitoreo/<access_token>/dns", methods=["GET"])
+def monitoring_dns(access_token):
+    """Vuelve a mostrar las instrucciones de DNS (host/tipo/valor) de un dominio ya registrado."""
+    monitored = get_domain_by_token(access_token)
+    if monitored is None:
+        return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
+    return render_template(
+        "monitoring/registered.html",
+        monitored=monitored,
+        rua_mailbox=DMARC_REPORTS_MAILBOX,
+        already_existed=True,
+        dns=build_dmarc_dns_instructions(monitored.domain, DMARC_REPORTS_MAILBOX),
+    )
+
+
+@app.route("/monitoreo/<access_token>/verificar-dns", methods=["POST"])
+def monitoring_verify_dns(access_token):
+    """htmx: vuelve a consultar el DNS en vivo y guarda si ya se publicó la casilla de monitoreo en el rua=."""
+    monitored = verify_dns(access_token, DMARC_REPORTS_MAILBOX)
+    if monitored is None:
+        return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
+    return render_template("partials/dns_verify_status.html", monitored=monitored)
 
 
 @app.route("/monitoreo/lista", methods=["GET"])

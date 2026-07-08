@@ -91,3 +91,14 @@ nslookup -type=TXT google._domainkey.octapus.io
 * `v=DMARC1` → DMARC configurado.
 * `v=spf1` → SPF configurado.
 * `v=DKIM1` → DKIM configurado.
+
+
+**Plataformas para validar DNS**
+
+- MXToolbox — mxtoolbox.com/SuperTool.aspx, buscar _dmarc.urianviera.com con tipo TXT.
+
+- Google Admin Toolbox Dig — toolbox.googleapps.com/apps/dig/#TXT/_dmarc.urianviera.com
+
+- DMARC Analyzer / dmarcian — dmarcian.com/dmarc-inspector, pega el dominio y valida el registro directamente.
+
+- whatsmydns.net — muestra la propagación del TXT _dmarc.urianviera.com en servidores DNS de distintas regiones, útil para ver si ya se propagó globalmente.

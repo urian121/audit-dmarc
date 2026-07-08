@@ -6,6 +6,11 @@
 <title>Akila - Monitoreo continuo de DMARC</title>
 <link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
 <script src="https://cdn.tailwindcss.com"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+  integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+  crossorigin="anonymous"
+></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
 </head>
 <body class="min-h-screen font-mono text-zinc-300 antialiased">
@@ -16,36 +21,97 @@
     {% include "partials/header.html" %}
 
     <div class="max-w-4xl mx-auto px-6 py-16">
-    <p class="text-[11px] text-emerald-400 uppercase tracking-[0.2em] mb-2">
-      {% if already_existed %}ya estaba registrado{% else %}registrado{% endif %}
-    </p>
-    <h1 class="text-2xl text-zinc-100 tracking-tight mb-6">{{ monitored.domain }}</h1>
-
-    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
-      <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-3">Falta un paso: agrega esto a tu DMARC</h2>
-      <p class="text-[12px] text-zinc-400 leading-relaxed mb-3">
-        Para que nos lleguen los reportes de este dominio, agrega nuestra casilla al <code class="text-zinc-300">rua=</code>
-        de tu registro DMARC (podés dejar el tuyo si ya tenías uno, separado por coma):
-      </p>
-      <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">rua=mailto:{{ rua_mailbox }}</pre>
-      <p class="mt-3 text-[11px] text-zinc-600">
-        Los primeros reportes tardan entre 24 y 48 horas en llegar — es normal no ver nada todavía.
-      </p>
+    <div class="flex items-center justify-between gap-3 mb-6">
+      <div class="flex items-center gap-3">
+        <a
+          href="{{ url_for('monitoring_dashboard', access_token=monitored.access_token) }}"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-md border border-zinc-800 text-zinc-400 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors shrink-0"
+          title="Volver al dashboard"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </a>
+        <h1 class="text-2xl text-zinc-100 tracking-tight">{{ monitored.domain }}</h1>
+      </div>
+      <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-emerald-500/30 text-emerald-400 bg-emerald-500/10 shrink-0">
+        {% if already_existed %}Ya estaba registrado{% else %}registrado{% endif %}
+      </span>
     </div>
 
     <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
-      <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-3">Tu dashboard privado</h2>
-      <p class="text-[12px] text-zinc-400 leading-relaxed mb-3">
-        Guarda este link — es la única forma de volver a ver la actividad de este dominio, no hay otra pantalla de acceso.
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase">Falta un paso: publica este registro DNS</h2>
+        <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-500/30 text-amber-400 bg-amber-500/10 shrink-0">REQUERIDO</span>
+      </div>
+      <p class="text-[12px] text-zinc-400 leading-relaxed mb-4">
+        {% if dns.has_existing_record %}
+          Este dominio ya tiene un registro DMARC — copia el valor de abajo (es el mismo que ya tenías, más nuestra casilla agregada al <code class="text-zinc-300">rua=</code>) y reemplaza el que está publicado hoy en tu proveedor de DNS.
+        {% else %}
+          Este dominio no tiene ningún registro DMARC todavía. Te sugerimos empezar en modo <strong class="text-zinc-300">"sólo monitoreo"</strong> (<code class="text-zinc-300">p=none</code>): no bloquea ni pone en cuarentena ningún correo, sólo activa la recolección de reportes. Puedes endurecerlo más adelante.
+        {% endif %}
       </p>
-      <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ url_for('monitoring_dashboard', access_token=monitored.access_token, _external=True) }}</pre>
+
+      <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[12px] items-center mb-1">
+        <span class="text-zinc-500 uppercase tracking-wide text-[10px]">Tipo</span>
+        <span class="text-zinc-200">{{ dns.type }}</span>
+
+        <span class="text-zinc-500 uppercase tracking-wide text-[10px]">Host / Nombre</span>
+        <div class="flex items-center gap-2">
+          <code id="dns-host-value" class="text-zinc-200 bg-zinc-950 border border-zinc-800/80 rounded px-2 py-1 w-fit">{{ dns.host }}</code>
+          <button
+            type="button"
+            title="Copiar"
+            data-copy-target="dns-host-value"
+            hx-on:click="navigator.clipboard.writeText(document.getElementById(this.dataset.copyTarget).textContent.trim()); this.dataset.copied = '1'; setTimeout(() => { this.dataset.copied = ''; }, 1500)"
+            class="group inline-flex items-center justify-center w-7 h-7 rounded-md border border-zinc-800 text-zinc-500 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors shrink-0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 group-data-[copied=1]:hidden">
+              <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 hidden group-data-[copied=1]:block text-emerald-400">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between mt-3 mb-1.5">
+        <span class="text-zinc-500 uppercase tracking-wide text-[10px]">Valor</span>
+        <button
+          type="button"
+          title="Copiar"
+          data-copy-target="dns-value-value"
+          hx-on:click="navigator.clipboard.writeText(document.getElementById(this.dataset.copyTarget).textContent.trim()); this.dataset.copied = '1'; setTimeout(() => { this.dataset.copied = ''; }, 1500)"
+          class="group inline-flex items-center gap-1.5 text-[10px] text-zinc-500 tracking-wide uppercase hover:text-[#ef5184] transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0 group-data-[copied=1]:hidden">
+            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0 hidden group-data-[copied=1]:block text-emerald-400">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span class="group-data-[copied=1]:hidden">Copiar</span>
+          <span class="hidden group-data-[copied=1]:inline text-emerald-400">Copiado</span>
+        </button>
+      </div>
+      <pre id="dns-value-value" class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ dns.value }}</pre>
+
+      <p class="mt-3 text-[11px] text-zinc-600">
+        Los primeros reportes tardan entre 24 y 48 horas en llegar — es normal no ver nada todavía.
+      </p>
+
+      {% include "partials/dns_verify_status.html" %}
     </div>
 
     <a
       href="{{ url_for('monitoring_dashboard', access_token=monitored.access_token) }}"
       class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 text-zinc-950 text-sm font-semibold tracking-wide transition-colors"
     >
-      Ir al dashboard
+      Ir al monitoreo
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0">
         <line x1="5" y1="12" x2="19" y2="12"></line>
         <polyline points="12 5 19 12 12 19"></polyline>

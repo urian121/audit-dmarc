@@ -1,4 +1,6 @@
-from checkdmarc import check_domains
+import re
+
+from checkdmarc import check_dmarc, check_domains
 import dkim
 
 # Selectores DKIM más comunes en proveedores de correo (Google Workspace,
@@ -48,3 +50,66 @@ def run_check(domain, extra_selector=None):
         selectors.append(extra_selector)
     result["dkim"] = check_dkim(domain, selectors)
     return result
+
+
+def merge_rua_into_dmarc_record(raw_record, mailbox):
+    """Agrega `mailbox` al tag rua= de un registro DMARC crudo (o se lo agrega si no tenía)."""
+    rua_pattern = re.compile(r"(rua=)([^;]*)", re.IGNORECASE)
+    match = rua_pattern.search(raw_record)
+    target = f"mailto:{mailbox}"
+
+    if match:
+        existing_value = match.group(2).strip()
+        if mailbox in existing_value:
+            return raw_record  # ya está agregado, no duplicar
+        new_value = f"{existing_value},{target}"
+        return raw_record[:match.start(2)] + new_value + raw_record[match.end(2):]
+
+    record = raw_record.rstrip()
+    if not record.endswith(";"):
+        record += ";"
+    return f"{record} rua={target}"
+
+
+def dns_has_mailbox_in_rua(domain, mailbox):
+    """Consulta el DNS en vivo y dice si el registro DMARC publicado ahora mismo ya incluye `mailbox` en su rua=."""
+    try:
+        result = check_dmarc(domain, timeout=5)
+    except Exception:
+        return False
+
+    record = result.get("record") if not result.get("error") else None
+    if not record:
+        return False
+
+    rua_match = re.search(r"rua=([^;]*)", record, re.IGNORECASE)
+    if not rua_match:
+        return False
+
+    return mailbox.lower() in rua_match.group(1).lower()
+
+
+def build_dmarc_dns_instructions(domain, mailbox):
+    """Arma el registro DNS exacto (host/tipo/valor) que hay que publicar para recibir reportes DMARC.
+
+    Si el dominio ya tiene un registro DMARC, fusiona `mailbox` a su rua= existente
+    (conservando el resto tal cual). Si no tiene ninguno, sugiere uno nuevo en modo
+    "sólo monitoreo" (p=none), que no bloquea ningún correo.
+    """
+    try:
+        result = check_dmarc(domain, timeout=5)
+    except Exception:
+        result = {}
+
+    existing_record = result.get("record") if not result.get("error") else None
+    if existing_record:
+        value = merge_rua_into_dmarc_record(existing_record, mailbox)
+    else:
+        value = f"v=DMARC1; p=none; rua=mailto:{mailbox}"
+
+    return {
+        "host": f"_dmarc.{domain}",
+        "type": "TXT",
+        "value": value,
+        "has_existing_record": bool(existing_record),
+    }

@@ -33,26 +33,38 @@
           {{ 'ACTIVO' if monitored.is_active else 'INACTIVO' }}
         </span>
       </div>
-      <form method="POST" action="{{ url_for('monitoring_toggle', access_token=monitored.access_token) }}">
-        <input type="hidden" name="activar" value="{{ '0' if monitored.is_active else '1' }}">
-        <button
-          type="submit"
-          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors shrink-0"
+      <div class="flex items-center gap-2 shrink-0">
+        <a
+          href="{{ url_for('monitoring_dns', access_token=monitored.access_token) }}"
+          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors"
         >
-          {% if monitored.is_active %}
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
-              <line x1="10" y1="4" x2="10" y2="20"></line>
-              <line x1="14" y1="4" x2="14" y2="20"></line>
-            </svg>
-            Desactivar
-          {% else %}
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="w-3.5 h-3.5 shrink-0">
-              <polygon points="6 3 20 12 6 21 6 3"></polygon>
-            </svg>
-            Activar
-          {% endif %}
-        </button>
-      </form>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          Ver DNS
+        </a>
+        <form method="POST" action="{{ url_for('monitoring_toggle', access_token=monitored.access_token) }}">
+          <input type="hidden" name="activar" value="{{ '0' if monitored.is_active else '1' }}">
+          <button
+            type="submit"
+            class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors"
+          >
+            {% if monitored.is_active %}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
+                <line x1="10" y1="4" x2="10" y2="20"></line>
+                <line x1="14" y1="4" x2="14" y2="20"></line>
+              </svg>
+              Desactivar
+            {% else %}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="w-3.5 h-3.5 shrink-0">
+                <polygon points="6 3 20 12 6 21 6 3"></polygon>
+              </svg>
+              Activar
+            {% endif %}
+          </button>
+        </form>
+      </div>
     </div>
     <p class="text-[11px] text-zinc-600 mb-8">
       registrado el {{ monitored.created_at.strftime('%Y-%m-%d') }} · alertas a {{ monitored.owner_email }}

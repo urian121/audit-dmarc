@@ -1,4 +1,6 @@
 from models import Alert, AggregateReport, MonitoredDomain, db
+from models.monitoring import utcnow
+from services.checkdmarc_service import dns_has_mailbox_in_rua
 
 
 def register_domain(domain, owner_email):
@@ -13,6 +15,22 @@ def register_domain(domain, owner_email):
     db.session.add(monitored)
     db.session.commit()
     return monitored, True
+
+
+def get_domain_by_token(access_token):
+    """Busca un dominio monitoreado por su access_token (None si no existe)."""
+    return MonitoredDomain.query.filter_by(access_token=access_token).first()
+
+
+def verify_dns(access_token, mailbox):
+    """Vuelve a consultar el DNS en vivo y guarda si ya se publicó la casilla de monitoreo en el rua=. Devuelve None si el token no existe."""
+    monitored = get_domain_by_token(access_token)
+    if not monitored:
+        return None
+    monitored.dns_verified = dns_has_mailbox_in_rua(monitored.domain, mailbox)
+    monitored.dns_verified_at = utcnow()
+    db.session.commit()
+    return monitored
 
 
 def set_active(access_token, is_active):
@@ -32,7 +50,7 @@ def list_domains():
 
 def get_dashboard_data(access_token):
     """Arma los datos del dashboard privado de un dominio monitoreado (None si el token no existe)."""
-    monitored = MonitoredDomain.query.filter_by(access_token=access_token).first()
+    monitored = get_domain_by_token(access_token)
     if not monitored:
         return None
     alerts = monitored.alerts.order_by(Alert.created_at.desc()).limit(50).all()
