@@ -16,10 +16,56 @@
     {% include "partials/header.html" %}
 
     <div class="max-w-4xl mx-auto px-6 py-16">
-    <h1 class="text-2xl text-zinc-100 tracking-tight mb-1">{{ monitored.domain }}</h1>
+    <div class="flex items-center justify-between gap-3 mb-1">
+      <div class="flex items-center gap-3">
+        <a
+          href="{{ url_for('monitoring_list') }}"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-md border border-zinc-800 text-zinc-400 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors shrink-0"
+          title="Volver a la lista de monitores"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </a>
+        <h1 class="text-2xl text-zinc-100 tracking-tight">{{ monitored.domain }}</h1>
+        <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 {{ 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' if monitored.is_active else 'border-zinc-600 text-zinc-500 bg-zinc-500/10' }}">
+          {{ 'ACTIVO' if monitored.is_active else 'INACTIVO' }}
+        </span>
+      </div>
+      <form method="POST" action="{{ url_for('monitoring_toggle', access_token=monitored.access_token) }}">
+        <input type="hidden" name="activar" value="{{ '0' if monitored.is_active else '1' }}">
+        <button
+          type="submit"
+          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors shrink-0"
+        >
+          {% if monitored.is_active %}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
+              <line x1="10" y1="4" x2="10" y2="20"></line>
+              <line x1="14" y1="4" x2="14" y2="20"></line>
+            </svg>
+            Desactivar
+          {% else %}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="w-3.5 h-3.5 shrink-0">
+              <polygon points="6 3 20 12 6 21 6 3"></polygon>
+            </svg>
+            Activar
+          {% endif %}
+        </button>
+      </form>
+    </div>
     <p class="text-[11px] text-zinc-600 mb-8">
       registrado el {{ monitored.created_at.strftime('%Y-%m-%d') }} · alertas a {{ monitored.owner_email }}
     </p>
+
+    {% if not monitored.is_active %}
+    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-8">
+      <p class="text-[12px] text-zinc-500 leading-relaxed">
+        El monitoreo de este dominio está desactivado: no se revisan cambios de DNS ni se procesan reportes nuevos.
+        El historial de abajo se conserva. Reactívalo cuando quieras con el botón de arriba.
+      </p>
+    </div>
+    {% endif %}
 
     {% if not reports %}
     <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-8">

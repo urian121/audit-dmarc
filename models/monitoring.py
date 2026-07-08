@@ -25,6 +25,7 @@ class MonitoredDomain(db.Model):
     access_token = db.Column(
         db.String(64), unique=True, nullable=False, default=generate_access_token, index=True
     )
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
 
     snapshots = db.relationship(

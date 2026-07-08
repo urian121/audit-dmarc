@@ -2,13 +2,14 @@ import os
 import secrets
 
 from dotenv import load_dotenv
-from flask import Flask, abort, jsonify, render_template, request
+from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
+from sqlalchemy import inspect, text
 
 from models import db
 from services.ai_summary import generate_summary
 from services.card_builder import build_cards, build_summary
 from services.checkdmarc_service import run_check
-from services.monitoring_service import get_dashboard_data, list_domains, register_domain
+from services.monitoring_service import get_dashboard_data, list_domains, register_domain, set_active
 from services.reports_service import ingest_aggregate_report
 from utils.domain_validation import is_valid_domain
 
@@ -26,6 +27,19 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 with app.app_context():
     db.create_all()
+    # Sin Alembic todavía (ver AGENTS.md): db.create_all() crea tablas nuevas,
+    # pero no altera una tabla que ya existía antes de agregar una columna al
+    # modelo. Este bloque agrega columnas nuevas a mano si hace falta, para no
+    # tener que borrar la base cada vez que se suma un campo a MonitoredDomain.
+    inspector = inspect(db.engine)
+    if "monitored_domains" in inspector.get_table_names():
+        existing_columns = {col["name"] for col in inspector.get_columns("monitored_domains")}
+        if "is_active" not in existing_columns:
+            with db.engine.connect() as connection:
+                connection.execute(text(
+                    "ALTER TABLE monitored_domains ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1"
+                ))
+                connection.commit()
 
 # Casilla que recibe los reportes DMARC (se le pide al usuario que la agregue
 # a su rua=) y secreto que debe traer la URL del webhook de parsedmarc.
@@ -92,7 +106,7 @@ def check(domain):
     return jsonify(result)
 
 
-@app.route("/monitoring", methods=["GET", "POST"])
+@app.route("/monitoreo", methods=["GET", "POST"])
 def monitoring_register():
     """Formulario de alta de un dominio para monitoreo continuo (vigilancia DNS + reportes DMARC)."""
     if request.method == "GET":
@@ -123,19 +137,28 @@ def monitoring_register():
     )
 
 
-@app.route("/monitoring/lista", methods=["GET"])
+@app.route("/monitoreo/lista", methods=["GET"])
 def monitoring_list():
     """Lista pública de todos los dominios registrados para monitoreo (sin protección — decisión explícita)."""
     return render_template("monitoring/list.html", monitored_domains=list_domains())
 
 
-@app.route("/monitoring/<access_token>", methods=["GET"])
+@app.route("/monitoreo/<access_token>", methods=["GET"])
 def monitoring_dashboard(access_token):
     """Dashboard privado de un dominio monitoreado: reportes recibidos y alertas generadas."""
     data = get_dashboard_data(access_token)
     if data is None:
         return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
     return render_template("monitoring/dashboard.html", rua_mailbox=DMARC_REPORTS_MAILBOX, **data)
+
+
+@app.route("/monitoreo/<access_token>/toggle", methods=["POST"])
+def monitoring_toggle(access_token):
+    """Activa o desactiva el monitoreo de un dominio (no borra su historial) y vuelve al dashboard."""
+    monitored = set_active(access_token, request.form.get("activar") == "1")
+    if monitored is None:
+        return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
+    return redirect(url_for("monitoring_dashboard", access_token=access_token))
 
 
 @app.route("/webhooks/dmarc-aggregate/<secret>", methods=["POST"])

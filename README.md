@@ -59,9 +59,13 @@ DKIM no tiene una ubicación fija en DNS (depende de un selector), así que se p
 curl "http://127.0.0.1:5000/api/check/example.com?selector=mi-selector"
 ```
 
-### `GET/POST /monitoring`
+### `GET/POST /monitoreo`
 
-Alta de un dominio para **monitoreo continuo**: registra el dominio en SQLite (`DATABASE_URL`, por defecto `sqlite:///monitoring.db`) y muestra el DNS exacto que hay que agregar (`rua=` apuntando a `DMARC_REPORTS_MAILBOX`) para empezar a recibir reportes DMARC reales. Devuelve un link privado (`/monitoring/<token>`) con el dashboard de ese dominio — no hay lista pública ni login, el link es el único acceso.
+Alta de un dominio para **monitoreo continuo**: registra el dominio en SQLite (`DATABASE_URL`, por defecto `sqlite:///monitoring.db`) y muestra el DNS exacto que hay que agregar (`rua=` apuntando a `DMARC_REPORTS_MAILBOX`) para empezar a recibir reportes DMARC reales. Devuelve un link (`/monitoreo/<token>`) con el dashboard de ese dominio.
+
+### `GET /monitoreo/lista`
+
+Lista de todos los dominios registrados para monitoreo, con link a cada dashboard. Es pública y sin protección — decisión explícita, ver `AGENTS.md`.
 
 ### `POST /webhooks/dmarc-aggregate/<secret>`
 

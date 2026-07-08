@@ -15,7 +15,7 @@
   <div class="relative">
     {% include "partials/header.html" %}
 
-    <div class="max-w-2xl mx-auto px-6 py-16">
+    <div class="max-w-4xl mx-auto px-6 py-16">
       <div class="flex items-start justify-between gap-4 mb-3">
         <h1 class="text-2xl text-zinc-100 tracking-tight">Monitores registrados</h1>
         <a
@@ -39,9 +39,14 @@
             href="{{ url_for('monitoring_dashboard', access_token=m.access_token) }}"
             class="rise flex items-center justify-between gap-3 bg-zinc-900/50 border border-zinc-800 rounded-md p-4 hover:border-[#ef5184]/60 transition-colors"
           >
-            <div>
-              <p class="text-[13px] text-zinc-200">{{ m.domain }}</p>
-              <p class="text-[10px] text-zinc-600 mt-0.5">registrado el {{ m.created_at.strftime('%Y-%m-%d') }}</p>
+            <div class="flex items-center gap-2">
+              {% if not m.is_active %}
+                <span class="text-[9px] tracking-wider border border-zinc-600 text-zinc-500 bg-zinc-500/10 rounded px-1.5 py-0.5 shrink-0">INACTIVO</span>
+              {% endif %}
+              <div>
+                <p class="text-[13px] text-zinc-200">{{ m.domain }}</p>
+                <p class="text-[10px] text-zinc-600 mt-0.5">registrado el {{ m.created_at.strftime('%Y-%m-%d') }}</p>
+              </div>
             </div>
             <span class="text-[10px] text-zinc-500 shrink-0">{{ m.alerts.count() }} alertas</span>
           </a>

@@ -15,6 +15,23 @@ body { background-color: #09090b; }
   to { opacity: 1; transform: translateY(0); }
 }
 .rise { animation: rise .35s ease-out both; }
+
+/* Efecto radar del punto del logo: 3 ondas superpuestas, cada una arranca
+   del tamaño del punto y crece mientras se desvanece; el delay escalonado
+   hace que se vean varias ondas expandiéndose a la vez, no una sola. */
+@keyframes radar-wave {
+  0%   { transform: scale(1); opacity: .55; }
+  100% { transform: scale(4.5); opacity: 0; }
+}
+.radar-wave {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #ef5184;
+  animation: radar-wave 2.4s ease-out infinite;
+}
+.radar-wave:nth-child(2) { animation-delay: .8s; }
+.radar-wave:nth-child(3) { animation-delay: 1.6s; }
 pre.record { scrollbar-width: thin; scrollbar-color: #3f3f46 transparent; }
 pre.record::-webkit-scrollbar { height: 6px; }
 pre.record::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 999px; }

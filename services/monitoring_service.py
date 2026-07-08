@@ -2,14 +2,27 @@ from models import Alert, AggregateReport, MonitoredDomain, db
 
 
 def register_domain(domain, owner_email):
-    """Da de alta un dominio para monitoreo continuo, o devuelve el existente si ya estaba registrado."""
+    """Da de alta un dominio para monitoreo continuo; si ya estaba registrado pero inactivo, lo reactiva."""
     existing = MonitoredDomain.query.filter_by(domain=domain).first()
     if existing:
+        if not existing.is_active:
+            existing.is_active = True
+            db.session.commit()
         return existing, False
     monitored = MonitoredDomain(domain=domain, owner_email=owner_email)
     db.session.add(monitored)
     db.session.commit()
     return monitored, True
+
+
+def set_active(access_token, is_active):
+    """Activa o desactiva el monitoreo de un dominio (no borra su historial). Devuelve None si el token no existe."""
+    monitored = MonitoredDomain.query.filter_by(access_token=access_token).first()
+    if not monitored:
+        return None
+    monitored.is_active = is_active
+    db.session.commit()
+    return monitored
 
 
 def list_domains():

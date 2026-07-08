@@ -31,6 +31,8 @@ def ingest_aggregate_report(payload):
     monitored = MonitoredDomain.query.filter_by(domain=domain).first()
     if not monitored:
         return None  # el reporte es de un dominio que no está registrado con nosotros
+    if not monitored.is_active:
+        return None  # monitoreo desactivado: se ignora, no se guarda ni se alerta
 
     meta = payload.get("report_metadata") or {}
     report = AggregateReport(

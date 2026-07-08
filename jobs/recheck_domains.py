@@ -90,9 +90,9 @@ def check_domain_for_changes(monitored):
 
 
 def main():
-    """Corre check_domain_for_changes() para todos los dominios registrados y notifica las alertas nuevas."""
+    """Corre check_domain_for_changes() para los dominios activos y notifica las alertas nuevas."""
     with app.app_context():
-        for monitored in MonitoredDomain.query.all():
+        for monitored in MonitoredDomain.query.filter_by(is_active=True).all():
             try:
                 check_domain_for_changes(monitored)
             except Exception as error:
