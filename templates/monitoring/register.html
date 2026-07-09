@@ -29,7 +29,12 @@
       <p class="mb-4 text-xs text-rose-400">{{ error }}</p>
     {% endif %}
 
-    <form method="POST" autocomplete="off" class="flex flex-col gap-3">
+    <form
+      method="POST"
+      autocomplete="off"
+      class="flex flex-col gap-3"
+      onsubmit="this.querySelectorAll('input').forEach(el => { el.readOnly = true; el.classList.add('opacity-50'); }); this.querySelector('button[type=submit]').disabled = true"
+    >
       <div class="flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded-md px-4 py-3 focus-within:border-[#ef5184]/60 transition-colors">
         <span class="text-[#ef5184] select-none">$</span>
         <input
@@ -39,7 +44,7 @@
           pattern="^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))+$"
           placeholder="tudominio.com"
           value="{{ domain or '' }}"
-          class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm"
+          class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm transition-opacity"
         />
       </div>
       <div class="flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded-md px-4 py-3 focus-within:border-[#ef5184]/60 transition-colors">
@@ -50,12 +55,12 @@
           required
           placeholder="tu@correo.com — recibirás las alertas aquí"
           value="{{ owner_email or '' }}"
-          class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm"
+          class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm transition-opacity"
         />
       </div>
       <button
         type="submit"
-        class="mt-2 px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 text-zinc-950 text-sm font-semibold tracking-wide transition-colors inline-flex items-center justify-center gap-2"
+        class="mt-2 px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 text-sm font-semibold tracking-wide transition-colors inline-flex items-center justify-center gap-2"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0">
           <line x1="12" y1="5" x2="12" y2="19"></line>

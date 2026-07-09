@@ -7,7 +7,7 @@ from flask import Flask, abort, jsonify, redirect, render_template, request, url
 from models import db
 from services.ai_summary import generate_summary
 from services.card_builder import build_cards, build_risks, build_summary
-from services.checkdmarc_service import build_dmarc_dns_instructions, run_check
+from services.checkdmarc_service import build_dmarc_dns_instructions, build_extra_dns_instructions, run_check
 from utils.dmarc_builder import build_dmarc_value
 from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns
 from services.reports_service import ingest_aggregate_report
@@ -135,6 +135,7 @@ def monitoring_register():
         rua_mailbox=DMARC_REPORTS_MAILBOX,
         already_existed=not created,
         dns=build_dmarc_dns_instructions(domain, DMARC_REPORTS_MAILBOX),
+        extra_dns=build_extra_dns_instructions(domain, DMARC_REPORTS_MAILBOX),
     )
 
 
@@ -165,6 +166,7 @@ def monitoring_dns(access_token):
         rua_mailbox=DMARC_REPORTS_MAILBOX,
         already_existed=True,
         dns=build_dmarc_dns_instructions(monitored.domain, DMARC_REPORTS_MAILBOX),
+        extra_dns=build_extra_dns_instructions(monitored.domain, DMARC_REPORTS_MAILBOX),
     )
 
 

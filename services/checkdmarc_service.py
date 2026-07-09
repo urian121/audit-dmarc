@@ -1,7 +1,20 @@
-from checkdmarc import check_dmarc, check_domains
+from checkdmarc import check_bimi, check_dmarc, check_domains, check_mta_sts, check_mx, check_smtp_tls_reporting, check_spf
 import dkim
 
 from utils.dmarc_builder import build_dmarc_value
+
+# Heurística por hostname MX -> include: de SPF sugerido para ese proveedor.
+# No es oficial ni exhaustiva — sólo un punto de partida; confirmar el include:
+# exacto con la documentación del proveedor (puede variar por región/plan).
+KNOWN_MX_PROVIDERS = [
+    ("Google Workspace / Gmail", "google.com", "include:_spf.google.com"),
+    ("Microsoft 365 / Outlook", "outlook.com", "include:spf.protection.outlook.com"),
+    ("Zoho Mail", "zoho.com", "include:zoho.com"),
+    ("Amazon WorkMail", "awsapps.com", "include:amazonses.com"),
+    ("Yahoo Mail", "yahoodns.net", "include:spf.mail.yahoo.com"),
+    ("Proton Mail", "protonmail.ch", "include:_spf.protonmail.ch"),
+    ("GoDaddy Email", "secureserver.net", "include:secureserver.net"),
+]
 
 # Selectores DKIM más comunes en proveedores de correo (Google Workspace,
 # Microsoft 365, SendGrid, Mailchimp, etc.). checkdmarc no reporta DKIM, así
@@ -113,4 +126,81 @@ def build_dmarc_dns_instructions(domain, mailbox):
         "policy": {"p": p, "sp": sp, "pct": pct, "adkim": adkim, "aspf": aspf},
         "rua": rua,
         "ruf": ruf,
+    }
+
+
+def detect_mail_provider(domain):
+    """Consulta los MX del dominio e intenta identificar el proveedor de correo entrante por su hostname, para sugerir el include: de SPF correspondiente."""
+    try:
+        result = check_mx(domain, timeout=5)
+    except Exception:
+        result = {}
+    hosts = [h.get("hostname", "") for h in (result.get("hosts") or []) if h.get("hostname")]
+    for label, needle, include in KNOWN_MX_PROVIDERS:
+        if any(needle in host.lower() for host in hosts):
+            return {"hosts": hosts, "label": label, "include": include}
+    return {"hosts": hosts, "label": None, "include": None}
+
+
+def build_spf_status(domain):
+    """Consulta el SPF actual, sólo lectura — nunca se sugiere un valor final (un SPF genérico podría rechazar correo legítimo). Si no tiene, usa los MX para sugerir un include: de partida."""
+    try:
+        result = check_spf(domain, timeout=5)
+    except Exception:
+        result = {}
+    status = {"record": result.get("record") if not result.get("error") else None}
+    if not status["record"]:
+        status["provider"] = detect_mail_provider(domain)
+    return status
+
+
+def build_tls_rpt_instructions(domain, mailbox):
+    """Arma el registro TLS-RPT (host/tipo/valor), agregando `mailbox` a su rua= existente — igual idea que build_dmarc_dns_instructions, pero TLS-RPT nunca bloquea correo, así que siempre es seguro sugerirlo."""
+    try:
+        result = check_smtp_tls_reporting(domain, timeout=5)
+    except Exception:
+        result = {}
+
+    tags = result.get("tags") or {}
+    rua_values = list((tags.get("rua") or {}).get("value") or [])
+    has_existing_record = bool(rua_values)
+    target = f"mailto:{mailbox}"
+    if target not in rua_values:
+        rua_values.append(target)
+
+    return {
+        "host": f"_smtp._tls.{domain}",
+        "type": "TXT",
+        "value": f"v=TLSRPTv1; rua={','.join(rua_values)}",
+        "has_existing_record": has_existing_record,
+    }
+
+
+def build_bimi_status(domain):
+    """Consulta si ya existe un registro BIMI, sólo lectura — no se sugiere uno nuevo, requiere un logo (y a veces certificado VMC) ya hospedado."""
+    try:
+        result = check_bimi(domain, timeout=5)
+    except Exception:
+        result = {}
+    return {"record": result.get("record") if not result.get("error") else None}
+
+
+def build_mta_sts_status(domain):
+    """Consulta si ya existe un registro MTA-STS, sólo lectura — no se sugiere uno nuevo, requiere además hospedar un archivo de política en una URL aparte."""
+    try:
+        result = check_mta_sts(domain, timeout=5)
+    except Exception:
+        result = {}
+    if not result.get("valid"):
+        return {"record": None}
+    return {"record": f"v=STSv1; id={result.get('id')}"}
+
+
+def build_extra_dns_instructions(domain, mailbox):
+    """Arma la info complementaria de SPF/TLS-RPT/BIMI/MTA-STS para la pantalla de instrucciones DNS del monitoreo."""
+    return {
+        "spf": build_spf_status(domain),
+        "tls_rpt": build_tls_rpt_instructions(domain, mailbox),
+        "bimi": build_bimi_status(domain),
+        "mta_sts": build_mta_sts_status(domain),
     }
