@@ -291,6 +291,74 @@ def dkim_card(entries):
     )
 
 
+# Acción concreta a tomar por (protocolo, estado) — sólo fail/warn necesitan una, ok/na no.
+RISK_MITIGATIONS = {
+    ("DNSSEC", "fail"): "Activa DNSSEC desde tu proveedor de DNS — evita que alguien falsifique las respuestas de este dominio.",
+    ("SPF", "fail"): "Publica un registro SPF que declare qué servidores pueden enviar correo en nombre de este dominio.",
+    ("SPF", "warn"): "Revisa la advertencia de tu SPF — puede estar cerca del límite de 10 consultas DNS permitidas.",
+    ("DMARC", "fail"): "Publica un registro DMARC — sin él, cualquiera puede enviar correo haciéndose pasar por este dominio sin que nadie se entere.",
+    ("DMARC", "warn"): "Sube la política DMARC a cuarentena o rechazo cuando estés listo — hoy sólo está en modo monitoreo, no bloquea nada.",
+    ("DKIM", "fail"): "Activa DKIM en tu proveedor de correo (Google Workspace, Microsoft 365, etc.) y firma los mensajes salientes.",
+    ("DKIM", "warn"): "No se encontró DKIM en los selectores más comunes — confirma con tu proveedor cuál selector usa y agrégalo a la búsqueda.",
+    ("MX", "fail"): "Revisa tu registro MX — sin uno válido no se puede recibir correo en este dominio.",
+    ("MX", "warn"): "Revisa la advertencia de tus servidores MX con tu proveedor de correo.",
+    ("MTA-STS", "warn"): "Opcional: publica MTA-STS para forzar que el correo entrante siempre viaje cifrado.",
+    ("TLS-RPT", "warn"): "Opcional: publica TLS-RPT para que te avisen si falla el cifrado del correo entrante.",
+    ("BIMI", "warn"): "Opcional: BIMI muestra el logo de tu marca junto al correo, pero primero necesitas DMARC en cuarentena o rechazo.",
+    ("Nameservers", "fail"): "Revisa la configuración de tus servidores DNS (NS) con tu proveedor.",
+    ("Nameservers", "warn"): "Revisa la advertencia de tus servidores DNS (NS) con tu proveedor.",
+}
+
+# Severidad por estado; las advertencias de protocolos opcionales (SOFT_ABSENCE_KEYS) pesan menos.
+RISK_SEVERITY = {
+    "fail": ("Alta", "border-rose-500/30 text-rose-400 bg-rose-500/10"),
+    "warn": ("Media", "border-amber-500/30 text-amber-400 bg-amber-500/10"),
+}
+RISK_SEVERITY_SOFT_WARN = ("Baja", "border-zinc-600 text-zinc-400 bg-zinc-500/10")
+SEVERITY_RANK = {"Alta": 0, "Media": 1, "Baja": 2}
+SOFT_ABSENCE_TITLES = ("MTA-STS", "TLS-RPT", "BIMI")
+
+
+def _tls_rpt_example(domain):
+    """Ejemplo de registro TLS-RPT para adaptar — usa una casilla de ejemplo, no una real; el usuario debe cambiarla por una que controle."""
+    if not domain:
+        return None
+    return {
+        "host": f"_smtp._tls.{domain}",
+        "type": "TXT",
+        "value": f"v=TLSRPTv1; rua=mailto:tls-reports@{domain}",
+    }
+
+
+def build_risks(cards, domain=None):
+    """A partir de las tarjetas ya armadas, arma la lista de riesgos a resolver (sólo fail/warn), con severidad y una acción concreta, de más a menos grave."""
+    risks = []
+    for card in cards:
+        status = card["status"]
+        if status not in ("fail", "warn"):
+            continue
+        mitigation = RISK_MITIGATIONS.get((card["title"], status))
+        if not mitigation:
+            continue
+        if status == "warn" and card["title"] in SOFT_ABSENCE_TITLES:
+            severity, severity_cls = RISK_SEVERITY_SOFT_WARN
+        else:
+            severity, severity_cls = RISK_SEVERITY[status]
+        risk = {
+            "title": card["title"],
+            "severity": severity,
+            "severity_cls": severity_cls,
+            "mitigation": mitigation,
+        }
+        if card["title"] == "TLS-RPT":
+            example = _tls_rpt_example(domain)
+            if example:
+                risk["dns_example"] = example
+        risks.append(risk)
+    risks.sort(key=lambda r: SEVERITY_RANK.get(r["severity"], 3))
+    return risks
+
+
 def build_cards(data):
     """Arma la lista completa de tarjetas (una por protocolo) para renderizar en la plantilla."""
     return [

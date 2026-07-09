@@ -21,7 +21,7 @@
     {% include "partials/header.html" %}
 
     <div class="max-w-4xl mx-auto px-6 py-16">
-    <div class="flex items-center justify-between gap-3 mb-6">
+    <div class="flex items-center justify-between gap-3 mb-1">
       <div class="flex items-center gap-3">
         <a
           href="{{ url_for('monitoring_dashboard', access_token=monitored.access_token) }}"
@@ -39,6 +39,7 @@
         {% if already_existed %}Ya estaba registrado{% else %}registrado{% endif %}
       </span>
     </div>
+    <p class="text-[12px] text-zinc-500 mb-6 pl-11">Configuración DMARC sugerida para este dominio</p>
 
     <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
       <div class="flex items-center justify-between mb-3">

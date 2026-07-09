@@ -173,6 +173,30 @@
   </div>
 </div>
 
+{% if risks %}
+<div class="rise mb-4">
+  <h2 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase mb-2">Riesgos y qué hacer</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    {% for risk in risks %}
+      <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-3.5">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs tracking-[0.1em] text-zinc-300 uppercase">{{ risk.title }}</h3>
+          <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 shrink-0 {{ risk.severity_cls }}">{{ risk.severity }}</span>
+        </div>
+        <p class="text-[11px] text-zinc-500 leading-relaxed">{{ risk.mitigation }}</p>
+        {% if risk.dns_example %}
+          <div class="mt-2.5 pt-2.5 border-t border-zinc-800/60">
+            <span class="block mb-1 text-[10px] text-zinc-600">{{ risk.dns_example.host }} · {{ risk.dns_example.type }}</span>
+            <pre class="record overflow-x-auto text-[10px] text-zinc-500 bg-zinc-950 border border-zinc-800/70 rounded p-2">{{ risk.dns_example.value }}</pre>
+            <p class="mt-1.5 text-[10px] text-zinc-700">Ejemplo — cambia <code class="text-zinc-600">tls-reports@...</code> por una casilla que tú controles y puedas leer.</p>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
   {% for card in cards %}
     {{ render_card(card) }}

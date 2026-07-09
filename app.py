@@ -7,7 +7,7 @@ from sqlalchemy import inspect, text
 
 from models import db
 from services.ai_summary import generate_summary
-from services.card_builder import build_cards, build_summary
+from services.card_builder import build_cards, build_risks, build_summary
 from services.checkdmarc_service import build_dmarc_dns_instructions, run_check
 from utils.dmarc_builder import build_dmarc_value
 from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns
@@ -64,6 +64,7 @@ def render_result(domain, extra_selector=None):
     return render_template(
         "partials/check_result.html",
         cards=cards,
+        risks=build_risks(cards, data.get("domain") or domain),
         summary=build_summary(data),
         result_domain=data.get("domain"),
         base_domain=data.get("base_domain"),
