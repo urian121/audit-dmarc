@@ -7,8 +7,7 @@ instance/*
 .webassets-cache
 .env
 
-# Base de datos local de monitoreo (SQLite) y config real de parsedmarc
-*.db
+# Config real de parsedmarc (no versionar credenciales)
 config/parsedmarc.ini
 
 ### Flask.Python Stack ###

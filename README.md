@@ -61,7 +61,7 @@ curl "http://127.0.0.1:5000/api/check/example.com?selector=mi-selector"
 
 ### `GET/POST /monitoreo`
 
-Alta de un dominio para **monitoreo continuo**: registra el dominio en SQLite (`DATABASE_URL`, por defecto `sqlite:///monitoring.db`) y muestra el DNS exacto que hay que agregar (`rua=` apuntando a `DMARC_REPORTS_MAILBOX`) para empezar a recibir reportes DMARC reales. Devuelve un link (`/monitoreo/<token>`) con el dashboard de ese dominio.
+Alta de un dominio para **monitoreo continuo**: registra el dominio en Postgres (`DATABASE_URL`, obligatoria) y muestra el DNS exacto que hay que agregar (`rua=` apuntando a `DMARC_REPORTS_MAILBOX`) para empezar a recibir reportes DMARC reales. Devuelve un link (`/monitoreo/<token>`) con el dashboard de ese dominio.
 
 ### `GET /monitoreo/lista`
 

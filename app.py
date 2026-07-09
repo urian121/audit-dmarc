@@ -3,7 +3,6 @@ import secrets
 
 from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
-from sqlalchemy import inspect, text
 
 from models import db
 from services.ai_summary import generate_summary
@@ -21,35 +20,25 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Monitoreo continuo (fases 1-7 del plan): persistencia en SQLite por defecto,
-# configurable vía DATABASE_URL para producción (ej. Postgres en Railway).
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///monitoring.db")
+# Monitoreo continuo (fases 1-7 del plan): persistencia en Postgres. No hay
+# fallback a SQLite — DATABASE_URL es obligatoria (ver AGENTS.md). Railway la
+# inyecta solo al agregar el addon de Postgres; en local hay que copiarla a .env.
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    raise RuntimeError(
+        "Falta DATABASE_URL. Este proyecto usa Postgres — copia la cadena de "
+        "conexión del addon de Postgres en Railway (o de tu Postgres local) a .env."
+    )
+# Railway/Heroku entregan el esquema como "postgres://", pero SQLAlchemy 2.x
+# sólo reconoce "postgresql://" — sin este reemplazo, falla al conectar.
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 with app.app_context():
     db.create_all()
-    # Sin Alembic todavía (ver AGENTS.md): db.create_all() crea tablas nuevas,
-    # pero no altera una tabla que ya existía antes de agregar una columna al
-    # modelo. Este bloque agrega columnas nuevas a mano si hace falta, para no
-    # tener que borrar la base cada vez que se suma un campo a MonitoredDomain.
-    inspector = inspect(db.engine)
-    if "monitored_domains" in inspector.get_table_names():
-        existing_columns = {col["name"] for col in inspector.get_columns("monitored_domains")}
-        if "is_active" not in existing_columns:
-            with db.engine.connect() as connection:
-                connection.execute(text(
-                    "ALTER TABLE monitored_domains ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1"
-                ))
-                connection.commit()
-        if "dns_verified" not in existing_columns:
-            with db.engine.connect() as connection:
-                connection.execute(text(
-                    "ALTER TABLE monitored_domains ADD COLUMN dns_verified BOOLEAN NOT NULL DEFAULT 0"
-                ))
-                connection.execute(text(
-                    "ALTER TABLE monitored_domains ADD COLUMN dns_verified_at DATETIME"
-                ))
-                connection.commit()
 
 # Casilla que recibe los reportes DMARC (se le pide al usuario que la agregue
 # a su rua=) y secreto que debe traer la URL del webhook de parsedmarc.

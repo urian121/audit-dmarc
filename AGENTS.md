@@ -7,322 +7,81 @@
 
 ## Reglas de código
 
-* Cada función o método debe llevar un comentario de una línea (docstring) explicando qué hace.
+* Cada función o método lleva un comentario de una línea (docstring) explicando qué hace.
 * No dejar que `app.py` acumule lógica de negocio: la validación/consulta de dominios va en `services/`, los helpers puros (sin dependencias de Flask ni de checkdmarc/dkimpy) van en `utils/`. `app.py` sólo define rutas y arma la respuesta.
+* **Nunca editar, agregar ni eliminar datos de la base de datos (filas, columnas, tablas) sin autorización explícita del usuario** — ni en local ni en producción. Incluye migraciones, `INSERT`/`UPDATE`/`DELETE` manuales, y scripts de limpieza. Preguntar primero y esperar confirmación antes de tocar la base real.
 
 ## Reglas de frontend
 
 * Evitar JavaScript "puro"/manual para la interactividad de la UI (fetch + manipulación de DOM a mano).
-* Usar [htmx](https://htmx.org/) para peticiones AJAX, swapping parcial del DOM, indicadores de carga y validación de formularios. Documentación: [htmx.org/docs](https://htmx.org/docs/)
-* El servidor debe responder con fragmentos HTML renderizados (Jinja2, en `templates/partials/`) a las rutas que consume htmx — no JSON. El JSON queda reservado para la API REST pública (`/api/...`).
-* Si hace falta algo de lógica puntual en el cliente, preferir atributos `hx-on:` o `hx-*` declarativos antes que añadir un archivo `.js` nuevo.
-* Todo botón o link estilizado como botón (las acciones principales tipo `bg-[#ef5184] ... text-zinc-950`) debe llevar un ícono SVG inline junto al texto — sin librerías de íconos externas, mismo patrón que el ícono de lupa en el botón "Analizar" de `templates/index.html` (`inline-flex items-center justify-center gap-2` + `<svg>` con `stroke="currentColor"` para heredar el color del texto).
-
-## Barra de progreso de navegación
-
-Las 5 páginas completas (`index.html` y las 4 de `templates/monitoring/`) cargan [Pace.js](https://github.com/CodeByZach/pace) (`pace-theme-default.css` + `pace.min.js`, vía CDN de jsdelivr) al inicio del `<head>`, antes de Tailwind — se eligió sobre NProgress porque Pace es 100% automático (se autoinicia con la carga de la página y también hookea XHR sin escribir código propio), mientras que NProgress requiere llamar manualmente a `.start()`/`.done()` en cada navegación, algo más frágil en una app multi-página como esta (sin router de SPA). El color de la barra se sobreescribe a la marca (`#ef5184`) en `static/css/home.css` (`.pace .pace-progress`). Efecto secundario esperado y aceptado: como Pace hookea XHR globalmente, también se activa durante las búsquedas htmx (`/check`) además de la navegación entre páginas — no rompe nada, sólo se suma al indicador de carga que ya existe ahí.
-
-Los defaults de Pace (`catchupTime: 100`, `initialRate: 0.03`, `minTime: 250`, `ghostTime: 100`) están pensados para páginas más pesadas — en esta app (páginas chicas, cargan rápido) se sentía como que la barra "se arrastraba" hasta el final en vez de reflejar lo rápido que en realidad cargó. Por eso cada plantilla define `window.paceOptions` **antes** de cargar `pace.min.js` (el orden importa: Pace lee esa variable global al iniciar) con `initialRate: 0.3` (el "avance base" cuando no hay señales fuertes de progreso real — con el default de 0.03 es el principal culpable del arrastre lento), `catchupTime: 100`, `ghostTime: 50` y `minTime: 100` (bajados del default para no imponer una animación mínima más larga que la carga real). Si se vuelve a sentir desalineada con la velocidad real, ajustar `initialRate` primero — es el que más se nota en páginas rápidas.
-
-## Estado actual
-
-Proyecto en etapa inicial. Ya existe una separación básica por capas; todavía faltan `routes/` (Blueprints), `models/`, `exceptions/` y `tests/`.
-
-Estructura actual:
-
-* `app.py` — sólo define las rutas Flask y delega el trabajo a `services/`.
-* `services/checkdmarc_service.py` — lógica de negocio: corre `checkdmarc` y el chequeo de DKIM.
-* `services/card_builder.py` — convierte el resultado crudo en las "cards" que consume la plantilla (clasificación ok/warn/fail, severidad de ausencia, etc.).
-* `utils/domain_validation.py` y `utils/formatting.py` — helpers puros (validar formato de dominio, aplanar valores de tags DMARC, etc.) sin lógica de negocio.
-* Cada función/método tiene un comentario de una línea (docstring) explicando qué hace — mantenerlo así en el código nuevo.
-
-Implementado:
-
-* `GET /` — sirve el frontend (`templates/index.html`); si recibe `?domain=`, renderiza el resultado en el propio HTML (SSR).
-* `POST /check` — endpoint HTML consumido por htmx (`hx-post` del formulario, `domain`/`selector` como campos del form). Devuelve el fragmento `templates/partials/check_result.html` renderizado. La URL del navegador se queda en `/` (a propósito, no se usa `HX-Push-Url`).
-* `GET /api/check/<domain>` — API JSON: llama a `checkdmarc.check_domains()`, agrega el resultado de DKIM (ver abajo) y devuelve todo junto.
-* Chequeo de DKIM con `dkimpy` (`services/checkdmarc_service.py`): como `checkdmarc` no reporta DKIM, se prueba una lista de selectores comunes (`default`, `selector1`, `selector2`, `google`, `k1`, `k2`, `s1`, `s2`, `dkim`, `mail`) contra `<selector>._domainkey.<domain>` usando `dkim.get_txt` y `dkim.load_pk_from_dns`. También acepta un selector adicional vía `?selector=`.
-* `app.run()` escucha en `host="0.0.0.0"` y en el puerto de `$PORT` (default `5000`) — necesario para que Railway/PaaS puedan enrutar tráfico al contenedor; escuchar sólo en `127.0.0.1` deja la app inalcanzable desde afuera aunque el proceso arranque bien. `debug` se controla con `FLASK_DEBUG` (default `false`); no activarlo en producción, expone el debugger de Werkzeug.
-* Severidad de MTA-STS, TLS-RPT y BIMI (`SOFT_ABSENCE_KEYS` en `services/card_builder.py`): `checkdmarc` no distingue "el registro no existe" de "existe pero está mal" (ambos casos llegan como el mismo `{error, valid:false}`); la única pista es que el texto de `error` contiene "does not exist". Por eso, para estos tres protocolos opcionales, la ausencia del registro se muestra como ADVERTENCIA y no como FALLA — un SPF/DMARC ausente sigue siendo FALLA porque son protocolos base, no opcionales. Cuando es ausencia, además se reemplaza el mensaje de error (en inglés) por uno propio en español.
-* Timeouts de DNS (`is_timeout_error`/`friendly_error_message` en `utils/formatting.py`): un timeout ("resolution lifetime expired", "timed out") **no** es evidencia de mala configuración, sólo de que la consulta no respondió a tiempo — se clasifica como `na` (badge N/D, gris) en vez de FALLA, en **todas** las tarjetas (`status_of`, `record_status`, `mx_status`), no sólo en las de `SOFT_ABSENCE_KEYS`. El mensaje crudo en inglés se reemplaza por uno en español ("no se pudo verificar ahora mismo..."). Como `na` no suma ni resta en `build_summary()`, un timeout tampoco afecta el `score` — es lo correcto, ya que no sabemos si el protocolo está bien o mal, sólo que no pudimos preguntarle a tiempo al DNS.
-* Warnings de checkdmarc (`translate_warnings()` en `utils/formatting.py`, aplicado en `record_card`, `dmarc_card`, `spf_card`, `ns_card` y `mx_card`): los warnings conocidos y en inglés se traducen a español simple. Dos tipos de patrón:
-  * Texto fijo (dict `_WARNING_TRANSLATIONS`): ej. "Support for the pct tag was removed in RFC 9989".
-  * Con datos variables (función `_translate_external_auth_warning`, regex `_EXTERNAL_AUTH_RE`): el warning de "verificación de destino externo" de DMARC (RFC 7489 §7.1) — sale cuando `rua=`/`ruf=` apunta a un dominio que no autorizó recibir reportes de este dominio (ej. poner un Gmail personal en el `rua=`). Este mismo warning suele venir **duplicado** (uno por `rua`, otro por `ruf`, cuando ambos apuntan al mismo destino externo) — `translate_warnings()` deduplica por el texto ya traducido, no por el mensaje crudo (que puede variar ligeramente entre rua/ruf).
-  * Los que duplican algo que ya explicamos en otra parte de la misma tarjeta (ej. "p=none makes DMARC unenforced", que ya decimos nosotros mismos en "Política: Ninguna") se descartan directamente en vez de traducirse.
-  * Los warnings que no matchean ningún patrón conocido se muestran tal cual (crudo, en inglés) — no hay traductor genérico, sólo se traduce lo que ya se identificó como recurrente. Antes de agregar un nuevo patrón, confirmar el texto exacto que devuelve checkdmarc (puede variar entre versiones).
-* Explicación en lenguaje simple para SPF/DMARC/DKIM (`spf_card`, `dmarc_card`, `dkim_card` en `services/card_builder.py`): cada tarjeta muestra primero un "✔/✘ tiene X configurado", y luego traduce los tags a frases legibles — política DMARC (`p=`/`sp=`) con su significado (none/quarantine/reject), alineación (`adkim`/`aspf`, estricta/relajada), reportes (`rua`/`ruf`), y en SPF cada mecanismo (`include`, `ip4`, `mx`, etc.) más el calificador final (`~all`, `-all`, etc.). Cada tarjeta también lleva un `help_text` (una línea fija por protocolo en `PROTOCOL_HELP`) explicando qué es el protocolo en general. Antes de agregar nuevos tags/mecanismos a traducir, extender los diccionarios `DMARC_POLICY_LABELS`, `DMARC_ALIGNMENT_LABELS`, `SPF_ALL_LABELS` o `SPF_MECHANISM_LABELS` — no hardcodear strings sueltos en la plantilla.
-* No se muestra todo lo que devuelve checkdmarc, sólo lo que aporta valor para auditar seguridad de correo: no hay tarjeta de **SOA** (es administración de zona DNS, no tiene relación con autenticación de correo) y la tarjeta de **MX** filtra los warnings de DNS inverso/PTR (`visible_mx_warnings` en `services/card_builder.py`) porque casi siempre son de la infraestructura del proveedor de correo (ej. servidores de Google), no del dominio auditado, y el dueño del dominio no puede corregirlos. El estado (ok/warn/fail) de MX se calcula sobre esos warnings ya filtrados (`mx_status`), tanto en la tarjeta como en el resumen — si se agrega un nuevo filtro de warnings a alguna tarjeta, recalcular el estado de la misma forma para que no queden desincronizados.
-* Resumen con IA (`services/ai_summary.py`, `generate_summary()`): después de armar las cards, se le pide a OpenAI (modelo `OPENAI_ANALYSIS_MODEL`, con fallback a `OPENAI_MODEL` y luego a `gpt-4o-mini`) un resumen de máximo 6 líneas en español, en lenguaje simple, sobre la salud de autenticación del dominio. Se le pasan las cards ya interpretadas (no el JSON crudo) para que el resumen no contradiga lo que se ve en pantalla. Es 100% opcional: si `OPENAI_PROJECT_API_KEY` no está en `.env`, o la llamada falla/tarda más de 15s, `generate_summary()` devuelve `None` y la sección de resumen simplemente no se muestra — el resto de la auditoría (DNS/DKIM) nunca depende de que esto funcione. Sólo está conectado en el flujo HTML (`render_result()`, usado por `/` y `POST /check`); `/api/check/<domain>` sigue siendo JSON puro sin IA, para no agregarle costo/latencia de OpenAI a quien sólo quiere los datos crudos.
-* **"Riesgos y qué hacer"** (`build_risks()` en `services/card_builder.py`, grid de cards en `templates/partials/check_result.html`): arriba de las tarjetas por protocolo, un grid aparte con sólo los protocolos en fail/warn, cada uno con una severidad (Alta/Media/Baja) y una acción concreta a tomar (dict `RISK_MITIGATIONS`, clave `(título, status)`). No repite la explicación que ya da la tarjeta de abajo — sólo dice qué hacer al respecto. Es pura reorganización de lo que ya calcula `build_cards()`, no hace ninguna consulta nueva a DNS. Las advertencias de protocolos opcionales (`SOFT_ABSENCE_KEYS`: MTA-STS/TLS-RPT/BIMI) se marcan como severidad "Baja" en vez de "Media", igual que ya pesan menos en el score. Si no hay ningún fail/warn, la sección no se muestra (`{% if risks %}`). Surgió de comparar el reporte contra otras herramientas (PowerDMARC-style) que sí resumen así los riesgos — se armó como grid de cards (no tabla) para mantener el mismo lenguaje visual del resto de la app. La card de TLS-RPT además muestra un registro DNS de **ejemplo** (`_tls_rpt_example()`, sólo cuando `status=warn`) con una casilla ficticia (`tls-reports@<dominio>`) — **a propósito sin botón de copiar** y con una nota aclarando que hay que cambiar esa casilla por una real, para que no se pegue tal cual en producción. No se hizo lo mismo para SPF/DKIM/BIMI/MTA-STS: SPF no se puede sugerir a ciegas sin conocer los proveedores de envío reales (un valor genérico podría rechazar correo legítimo, a diferencia de DMARC `p=none` que nunca bloquea nada); DKIM lo publica el proveedor de correo, no es algo que este proyecto pueda inventar; BIMI necesita un logo hospedado (y a veces certificado VMC); MTA-STS necesita además un archivo de política hospedado en una URL, no sólo un TXT. Esta pantalla del checker (`/`, `/check`) es de auditoría genérica sin relación de monitoreo con el dominio — por eso nunca sugiere la casilla real de monitoreo (`DMARC_REPORTS_MAILBOX`), eso queda reservado a las pantallas de `/monitoreo/*` donde sí existe esa relación.
-* Barra de salud (`build_summary()` en `services/card_builder.py`): además de los conteos ok/warn/fail, calcula `score` (0-100) y `score_color`, y los porcentajes `ok_pct`/`warn_pct`/`fail_pct` para pintar una barra segmentada en CSS puro (sin librerías de gráficos ni JS) arriba de las tarjetas. Una advertencia pesa la mitad que un ok en el `score` (coherente con `SOFT_ABSENCE_KEYS`: un protocolo opcional ausente no es tan grave como uno roto).
-* El indicador de carga (`#loading`, `.htmx-indicator` en `static/css/home.css`) usa `display:none` por defecto, no sólo `opacity:0` — si se vuelve a opacity-only, el panel deja un hueco vacío en el layout mientras no hay ninguna búsqueda en curso (aunque sea invisible, sigue ocupando su alto).
-
-Pendiente (todo lo demás descrito en este documento): resto de endpoints por protocolo, arquitectura por capas, manejo de excepciones, logging, validación de parámetros y Docker.
-
----
-
-## Monitoreo continuo de DMARC
-
-A diferencia de `/check` (auditoría puntual, sin guardar nada), esta parte agrega vigilancia a lo largo del tiempo. Dos mecanismos complementarios, con datos distintos:
-
-* **Vigilancia DNS** (`jobs/recheck_domains.py`): reutiliza `run_check()` tal cual, sin lógica nueva de DNS — corre el chequeo de cada dominio registrado, lo compara contra el `DomainSnapshot` anterior, y genera una `Alert` si cambió la política DMARC (`p=`, indicando si se debilitó o se reforzó), el registro SPF, o los selectores DKIM encontrados. Pensado para correr como **cron** (no como servicio de larga duración): termina y se apaga.
-* **Vigilancia de tráfico real** (`services/reports_service.py`): ingiere los reportes DMARC agregados (RUA) que llegan vía [parsedmarc](https://github.com/domainaware/parsedmarc) — ver la sección de parsedmarc más arriba —, y compara los remitentes reales (`source_asn_org`/`source_ip` de cada `AggregateRecord`) contra los valores declarados en el SPF del dominio (`include:`/`ip4:`/etc., extraídos también con `run_check()`). Genera una `Alert` tipo `unknown_sender` por cada IP no cubierta y no vista antes. **Ojo**: la comparación es por coincidencia de texto del nombre del ASN, no por rangos CIDR exactos — es una heurística suficiente para detectar remitentes claramente ajenos, no un reemplazo de una validación SPF completa.
-
-Piezas:
-
-* `models/` (`db = SQLAlchemy()` en `__init__.py`, modelos en `monitoring.py`): `MonitoredDomain`, `DomainSnapshot`, `AggregateReport`, `AggregateRecord`, `Alert`. SQLite por defecto (`DATABASE_URL`, ver `.env-example`); sin migraciones (Alembic) todavía, las tablas se crean con `db.create_all()` al arrancar `app.py`.
-* `services/monitoring_service.py`: alta de dominios (`register_domain`) y datos del dashboard (`get_dashboard_data`).
-* `services/reports_service.py`: `ingest_aggregate_report()` (llamada desde el webhook) y `detect_unknown_senders()`.
-* `services/notifications.py`: `send_alert_email()` vía `smtplib` (variables `SMTP_*`) — no es dependencia nueva, es librería estándar de Python. Es quien manda las alertas, tanto las de `jobs/recheck_domains.py` como las de `detect_unknown_senders()` (el webhook sólo crea la `Alert` en la base; el envío de correo se centraliza en el cron para no bloquear la respuesta del webhook con una llamada SMTP).
-* Rutas en `app.py`: `GET/POST /monitoreo` (alta), `GET /monitoreo/lista` (lista de todos los dominios registrados), `GET /monitoreo/<access_token>` (dashboard de un dominio), `GET /monitoreo/<access_token>/dns` (vuelve a mostrar las instrucciones de DNS — la pantalla de `registered.html` sólo se veía una vez, justo después de registrar; esta ruta la reusa tal cual, recalculando el DNS en vivo con `build_dmarc_dns_instructions()`, para poder consultarlo de nuevo cuando el usuario quiera desde el botón "Ver DNS" del dashboard), `POST /monitoreo/<access_token>/toggle` (activar/desactivar), `POST /webhooks/dmarc-aggregate/<secret>` (recibe el JSON de parsedmarc; `<secret>` debe matchear `DMARC_WEBHOOK_SECRET` o responde 404 en vez de 401, para no delatar que la ruta existe). Las URLs están en español a propósito (`/monitoreo`, no `/monitoring`) porque son páginas que ve un usuario final; el webhook (no es una página, es un endpoint para parsedmarc) se dejó en inglés. Los nombres de las funciones Python (`monitoring_register`, `monitoring_list`, `monitoring_dashboard`) y sus referencias `url_for(...)` en las plantillas no cambiaron — Flask separa el endpoint (nombre de función) de la URL real, así que renombrar la URL nunca requiere tocar los templates.
-* **Activar/desactivar monitoreo** (`MonitoredDomain.is_active`, `services/monitoring_service.set_active()`): pausa el monitoreo de un dominio sin borrar su historial — se eligió esto en vez de "eliminar" porque `/monitoreo/lista` es pública y sin protección (ver nota abajo), así que una acción destructiva ahí sería riesgosa; esto es reversible. Mientras `is_active=False`: `jobs/recheck_domains.py` lo salta (no genera nuevos `DomainSnapshot` ni alertas de cambio de DNS), y `services/reports_service.ingest_aggregate_report()` ignora los reportes entrantes de ese dominio (no los guarda, no dispara `detect_unknown_senders`). El dashboard y la lista siguen mostrando el historial ya guardado, con un badge ACTIVO/INACTIVO. Registrar de nuevo un dominio ya existente pero inactivo lo reactiva automáticamente (`register_domain()`).
-* **Verificación de DNS en vivo** (`MonitoredDomain.dns_verified`/`dns_verified_at`, `services/checkdmarc_service.dns_has_mailbox_in_rua()`, `services/monitoring_service.verify_dns()`, `POST /monitoreo/<access_token>/verificar-dns`): en la pantalla de instrucciones de DNS hay un botón "Verificar" (htmx, `templates/partials/dns_verify_status.html`) que vuelve a consultar `checkdmarc.check_dmarc()` contra el dominio y confirma si el `rua=` publicado ahora mismo ya incluye la casilla de monitoreo — así el usuario no tiene que adivinar si el cambio de DNS ya se aplicó ni esperar a que llegue el primer reporte (que puede tardar 24-48h). El resultado (`True`/`False` + timestamp) se guarda en la base para no perderlo al recargar la página; no se verifica solo al cargar la página (evita una consulta DNS de más en cada visita), sólo cuando el usuario lo pide explícitamente. Esta es la única pantalla de monitoreo que usa htmx — por eso `registered.html` es la única de las 4 plantillas de `templates/monitoring/` que carga el script de htmx (las demás sólo usan `<form>` normales).
-* **Generador interactivo de política DMARC** (`utils/dmarc_builder.build_dmarc_value()`, `POST /monitoreo/dns/preview`, controles en `registered.html`): en la misma pantalla de instrucciones DNS hay controles (p/sp/pct/adkim/aspf) para armar variantes del registro sin salir de la página — inspirado en generadores tipo PowerDMARC. Es puramente una calculadora de texto, sin estado: `build_dmarc_value()` no toca DNS ni la base, vive en `utils/` (no en `services/`) porque no depende de Flask ni de checkdmarc. El formulario manda `rua`/`ruf` en inputs ocultos (ya resueltos por `build_dmarc_dns_instructions()`, incluyendo la casilla de monitoreo agregada) y sólo los controles de política se recalculan en vivo via htmx (`hx-trigger="change, input delay:300ms"` en el `<form>`, escuchando los eventos que burbujean desde sus hijos). **Deliberadamente no se persiste** la política elegida en `MonitoredDomain` — se evaluó guardarla para comparar contra lo publicado más adelante, pero se decidió mantenerlo sólo como vista previa/instructivo por ahora (ver conversación de diseño); si se vuelve a plantear, ahí es donde arrancaría (nueva columna + lógica de alerta si el publicado no matchea la política elegida).
-* **Instrucciones de DNS al registrar un dominio** (`services/checkdmarc_service.build_dmarc_dns_instructions()` + `merge_rua_into_dmarc_record()`): antes, `registered.html` sólo mostraba el `rua=mailto:...` suelto y el usuario reportó que no se entendía qué había que configurar en el DNS. Ahora, al registrar, se hace una consulta en vivo con `checkdmarc.check_dmarc(domain, timeout=5)` (no `check_domains()` — es la función liviana que sólo trae el DMARC, sin correr el resto de la auditoría) y con eso se arma un dict `{host, type, value, has_existing_record}` listo para mostrar en formato Host/Tipo/Valor (mismo patrón que herramientas como OnDMARC/PowerDMARC). Si el dominio ya tenía un registro DMARC, `merge_rua_into_dmarc_record()` le agrega la casilla de monitoreo a su `rua=` existente sin tocar el resto (no duplica si ya estaba agregada); si no tenía ninguno, se sugiere uno nuevo en modo `p=none` (sólo observa, no bloquea ni pone en cuarentena nada) para que activar el monitoreo nunca implique un riesgo para el correo del dominio.
-* **Nota sobre agregar columnas nuevas a `MonitoredDomain` (o cualquier modelo)**: no hay Alembic todavía, y `db.create_all()` en `app.py` sólo crea tablas que no existen — **no** altera una tabla ya creada para sumarle una columna nueva. Por eso `app.py` tiene un bloque que revisa con `sqlalchemy.inspect` si la columna existe y, si no, corre un `ALTER TABLE ... ADD COLUMN` a mano (ver el bloque después de `db.create_all()`). Si se agrega un campo nuevo a un modelo existente, hay que sumar ahí el `ALTER TABLE` correspondiente — si no, la base local/de producción que ya tenía datos antes del cambio no va a tener la columna nueva y las queries van a fallar con "no such column".
-* **Decisión explícita sobre `/monitoreo/lista`**: es pública y sin protección — cualquiera puede ver todos los dominios registrados y entrar a cualquier dashboard sin necesitar su `access_token`. Se preguntó directamente al usuario (proteger con contraseña de admin vs. dejarla pública) y eligió dejarla pública. Esto en la práctica anula la privacidad que el `access_token` daba por sí solo (ver nota abajo) — si en algún momento se quiere volver a restringir el acceso por dominio, hay que revisar primero esta ruta, no solo el dashboard.
-* Las 4 páginas de `templates/monitoring/` (`register`, `registered`, `list`, `dashboard`) usan el mismo ancho de contenido (`max-w-4xl`) — mantenerlo así si se agrega una página nueva a esta sección, para que no salte el ancho al navegar entre ellas.
-* `config/parsedmarc.ini.example`: plantilla para el worker de parsedmarc (Fase 4 del plan), que corre **aparte** del servicio web (Railway *Worker*, no *Cron*, porque mantiene la conexión IMAP abierta con `mailbox.watch = True`).
-
-Pendiente (fuera del alcance de código, requiere acción del usuario en plataformas externas — ver el plan guardado):
-
-* Fase 0: crear la casilla de correo (`DMARC_REPORTS_MAILBOX`), su MX, y el TXT de verificación de destino externo (RFC 7489 §7.1) en el dominio receptor.
-* Fase 4: desplegar el worker de parsedmarc como servicio aparte en Railway con `config/parsedmarc.ini.example` completado.
-* Fase 8: prueba end-to-end una vez la infraestructura de correo esté lista (los primeros reportes reales tardan 24-48h en llegar).
-
----
-
-## Objetivo
-
-Construir un backend REST en **Python + Flask** que exponga una API para validar y verificar la configuración de autenticación de correo electrónico de uno o varios dominios.
-
-El servicio debe ser modular, escalable y desacoplado, de forma que posteriormente pueda integrarse con un frontend desarrollado de manera independiente.
-
-## Tecnologías
-
-* Python 3.11+
-* Flask
-* checkdmarc
-* dkimpy
-* dnspython
-* htmx (frontend, vía CDN)
-* openai (opcional, resumen con IA — ver `services/ai_summary.py`)
-* parsedmarc (ingesta/parseo de reportes DMARC agregados y SMTP TLS — ver sección propia más abajo)
-* Flask-SQLAlchemy (persistencia del monitoreo continuo — dominios registrados, snapshots, reportes, alertas)
-
-## Librerías base
-
-### CheckDMARC
-
-Repositorio:
-https://github.com/domainaware/checkdmarc
-
-Paquete:
-https://pypi.org/project/checkdmarc/
-
-Será el motor principal para validar:
-
-* SPF
-* DMARC
-* BIMI
-* MTA-STS
-* TLS-RPT
-* MX
-* DNSSEC
-* NS
-* SOA
-* STARTTLS
-
-No se debe reimplementar la lógica ya existente en esta librería.
-
----
-
-### DKIMPy
-
-Paquete:
-https://pypi.org/project/dkimpy/
-
-Será utilizada para implementar toda la funcionalidad relacionada con DKIM.
-
-Debe permitir:
-
-* Validar registros DKIM.
-* Consultar selectores DKIM.
-* Verificar firmas DKIM.
-* Firmar mensajes.
-* Soporte ARC.
-* RSA.
-* Ed25519.
-
-Cuando sea necesario deberá apoyarse en dnspython para consultar los registros DNS de los selectores.
-
----
-
-### parsedmarc
-
-Repositorio: [github.com/domainaware/parsedmarc](https://github.com/domainaware/parsedmarc)
-
-Documentación: [domainaware.github.io/parsedmarc](https://domainaware.github.io/parsedmarc/)
-
-Del mismo autor que `checkdmarc`. Se usa para la parte de **monitoreo continuo** (ver "Monitoreo continuo de DMARC" más abajo): lee una casilla de correo (IMAP) donde llegan los reportes DMARC agregados (RUA) y SMTP TLS que los proveedores de correo (Google, Microsoft, etc.) mandan a los dominios registrados, los parsea, y los entrega como JSON estructurado — no hace falta escribir un parser de XML/gzip propio.
-
-**Consultar siempre esta documentación ante cualquier duda** sobre: formato del archivo de configuración (`config.ini`, secciones `[general]`, `[mailbox]`, `[imap]`, `[webhook]`, etc.), variables de entorno soportadas (prefijo `PARSEDMARC_SECCION_CLAVE`), el esquema exacto del JSON que produce (campos de `source`, `policy_evaluated`, `auth_results`, `alignment`), o el comportamiento de `mailbox.watch` (IMAP IDLE) — no asumir ni inventar sintaxis.
-
-Restricciones, igual que con checkdmarc: no reimplementar el parseo de reportes DMARC/SMTP TLS que ya resuelve esta librería; usarla siempre que se necesite ingesta de reportes reales de correo (a diferencia de `checkdmarc`, que solo lee configuración DNS).
-
----
-
-## Objetivo funcional
-
-La API debe verificar la correcta configuración de los siguientes protocolos:
-
-* SPF
-* DKIM
-* DMARC
-* BIMI
-* MTA-STS
-* TLS-RPT
-* MX
-* DNSSEC
-* STARTTLS
-
-Cada protocolo debe poder consultarse de manera independiente.
-
-También debe existir un endpoint que realice una auditoría completa del dominio.
-
----
-
-## Endpoints mínimos
-
-GET /api/check/<domain>
-
-Retorna toda la información del dominio.
-
----
-
-GET /api/spf/<domain>
-
-Retorna únicamente la validación SPF.
-
----
-
-GET /api/dmarc/<domain>
-
-Retorna únicamente la validación DMARC.
-
----
-
-GET /api/dkim/<domain>?selector=<selector>
-
-Valida el selector DKIM indicado.
-
----
-
-GET /api/bimi/<domain>
-
----
-
-GET /api/mta-sts/<domain>
-
----
-
-GET /api/tls-rpt/<domain>
-
----
-
-GET /api/mx/<domain>
-
----
-
-GET /api/dnssec/<domain>
-
----
-
-GET /api/starttls/<domain>
-
----
-
-POST /api/check
-
-Permite validar un dominio enviado mediante JSON.
-
-Ejemplo:
-
-{
-"domain": "example.com"
-}
-
----
-
-POST /api/check/bulk
-
-Permite validar múltiples dominios.
-
-Ejemplo:
-
-{
-"domains": [
-"google.com",
-"github.com",
-"openai.com"
-]
-}
-
----
+* Usar [htmx](https://htmx.org/) para peticiones AJAX, swapping parcial del DOM, indicadores de carga y validación. Documentación: [htmx.org/docs](https://htmx.org/docs/)
+* El servidor responde con fragmentos HTML renderizados (Jinja2, en `templates/partials/`) a las rutas que consume htmx — no JSON. El JSON queda para la API pública (`/api/...`).
+* Si hace falta lógica puntual en el cliente, preferir `hx-on:`/`hx-*` declarativos antes que añadir un archivo `.js` nuevo.
+* Todo botón/link estilizado como botón (`bg-[#ef5184] ... text-zinc-950`) lleva un ícono SVG inline junto al texto — sin librerías de íconos externas, `stroke="currentColor"` para heredar el color.
+* Las 5 páginas completas cargan [Pace.js](https://github.com/CodeByZach/pace) para la barra de progreso de navegación (elegido sobre NProgress por ser automático, sin código propio para iniciar/terminar la barra). `window.paceOptions` se define **antes** de cargar `pace.min.js`, con timings más rápidos que el default (`initialRate: 0.3` en vez de `0.03`, que es el que más se nota en páginas rápidas) — los defaults de Pace están pensados para páginas más pesadas que las de esta app.
 
 ## Arquitectura
 
-La aplicación debe estar organizada por capas.
+* `app.py` — sólo rutas Flask, delega a `services/`.
+* `services/checkdmarc_service.py` — corre `checkdmarc` + DKIM (`dkimpy`) + arma las instrucciones de DNS para el monitoreo.
+* `services/card_builder.py` — convierte el resultado crudo en "cards" (ok/warn/fail) y en los riesgos priorizados que se muestran arriba de ellas.
+* `services/monitoring_service.py`, `services/reports_service.py`, `services/notifications.py` — alta/estado de dominios monitoreados, ingesta de reportes DMARC, envío de alertas por correo.
+* `utils/` — helpers puros, sin dependencias de Flask/checkdmarc (`domain_validation.py`, `formatting.py`, `dmarc_builder.py`).
+* `models/` — `db = SQLAlchemy()` + modelos en `monitoring.py`. Persistencia en **Postgres** (ver sección propia abajo).
+* `jobs/recheck_domains.py` — vigilancia DNS periódica (pensado como Railway Cron, no servicio de larga duración).
 
-backend/
+## Checker de un dominio (`/`, `POST /check`, `GET /api/check/<domain>`)
 
-app.py
+* DKIM: `checkdmarc` no lo reporta, así que se prueba una lista de selectores comunes contra `<selector>._domainkey.<domain>` con `dkimpy`, más un selector opcional vía `?selector=`.
+* Ausencia vs. falla: para MTA-STS/TLS-RPT/BIMI (`SOFT_ABSENCE_KEYS` en `card_builder.py`), que el registro no exista es ADVERTENCIA, no FALLA — son protocolos opcionales, a diferencia de SPF/DMARC. La pista para distinguir "no existe" de "existe pero mal" es el texto "does not exist" en el error de checkdmarc.
+* Los timeouts de DNS se clasifican como `na` (N/D) en todas las tarjetas, nunca como FALLA — no son evidencia de mala configuración, y no afectan el `score`.
+* Warnings de `checkdmarc` en inglés se traducen (`translate_warnings()` en `utils/formatting.py`) sólo para los patrones ya identificados; lo no reconocido se muestra crudo. Confirmar el texto exacto antes de agregar un patrón nuevo (puede variar entre versiones de checkdmarc).
+* Al agregar nuevos tags/mecanismos DMARC o SPF a traducir, extender los diccionarios de `card_builder.py` (`DMARC_POLICY_LABELS`, `SPF_MECHANISM_LABELS`, etc.) — no hardcodear strings sueltos en la plantilla.
+* No se muestra todo lo que trae `checkdmarc`: sin tarjeta de SOA (no es de autenticación de correo), y MX filtra warnings de PTR/DNS-inverso (ruido del proveedor de correo, no corregible por el dueño del dominio).
+* "Riesgos y qué hacer" (`build_risks()`): grid con sólo los protocolos en fail/warn, severidad (Alta/Media/Baja) y una acción concreta — no repite la explicación de la tarjeta de abajo. Sólo TLS-RPT muestra un registro DNS de ejemplo (casilla ficticia, sin botón de copiar a propósito). No se hace lo mismo con SPF (un valor genérico podría rechazar correo legítimo), DKIM (lo publica el proveedor de correo) ni BIMI/MTA-STS (necesitan más que un TXT) — y nunca se sugiere la casilla real de monitoreo acá, porque este checker no tiene relación de registro con el dominio.
+* Resumen con IA (`services/ai_summary.py`) es 100% opcional: sin `OPENAI_PROJECT_API_KEY`, o si la llamada falla/tarda, no se muestra y el resto de la auditoría sigue funcionando igual. Sólo conectado en el flujo HTML, nunca en `/api/check/<domain>`.
+* `build_summary()`: una advertencia pesa la mitad que un ok en el `score`; una falla no suma nada.
 
-config.py
+## Monitoreo continuo de DMARC
 
-requirements.txt
+A diferencia del checker (auditoría puntual, sin guardar nada), esto vigila dominios registrados a lo largo del tiempo. Dos mecanismos:
 
-/routes
+* **Vigilancia DNS** (`jobs/recheck_domains.py`): reutiliza `run_check()`, compara contra el último `DomainSnapshot`, genera `Alert` si cambió la política DMARC, el SPF, o los selectores DKIM encontrados.
+* **Vigilancia de tráfico real** (`services/reports_service.py`): ingiere reportes DMARC agregados vía [parsedmarc](https://github.com/domainaware/parsedmarc) (webhook), compara remitentes reales contra el SPF declarado (heurística por texto de organización del ASN, no CIDR exacto) y genera `Alert` tipo `unknown_sender`.
 
-/services
+Piezas clave:
 
-/models
+* Rutas en `app.py`: `GET/POST /monitoreo`, `GET /monitoreo/lista`, `GET /monitoreo/<token>`, `GET /monitoreo/<token>/dns`, `POST /monitoreo/<token>/toggle`, `POST /monitoreo/<token>/verificar-dns`, `POST /monitoreo/dns/preview`, `POST /webhooks/dmarc-aggregate/<secret>`. El secreto del webhook va en la URL, no en un header (no está confirmado que parsedmarc permita headers custom); si no matchea `DMARC_WEBHOOK_SECRET`, responde 404 (no 401) para no delatar que la ruta existe. URLs en español a propósito (`/monitoreo`), excepto el webhook.
+* **Activar/desactivar** (`MonitoredDomain.is_active`): pausar en vez de eliminar, porque `/monitoreo/lista` es pública y sin protección (decisión explícita del usuario) — una acción destructiva ahí sería riesgosa. Inactivo = se salta la vigilancia DNS y se ignoran los reportes entrantes, pero se conserva el historial.
+* **Verificación de DNS** (`dns_verified`/`dns_verified_at`): botón "Verificar" (htmx) que confirma en vivo si el `rua=` publicado ya incluye la casilla de monitoreo; se guarda en la base, no se reconsulta sola en cada visita.
+* **Generador de política DMARC** (`utils/dmarc_builder.build_dmarc_value()`): controles p/sp/pct/adkim/aspf en la pantalla de instrucciones DNS, recalculados en vivo vía htmx. Es sólo una vista previa — deliberadamente no se persiste la política elegida.
+* **Instrucciones de DNS** (`build_dmarc_dns_instructions()`): si el dominio ya tiene DMARC, agrega la casilla de monitoreo a su `rua=` existente; si no tiene ninguno, sugiere uno nuevo en `p=none` (nunca bloquea correo).
+* `send_alert_email()`: el webhook sólo crea la `Alert` en la base; el envío del correo se centraliza en el cron de `jobs/recheck_domains.py`, para no bloquear la respuesta del webhook con una llamada SMTP.
+* `/monitoreo/lista` es pública y sin protección a propósito — anula la privacidad que el `access_token` daría por sí solo. Si se quiere restringir el acceso más adelante, revisar primero esta ruta.
 
-/utils
+## Base de datos: Postgres
 
-/exceptions
+Se migró por completo desde SQLite (antes de tener datos reales, sin nada que preservar). `DATABASE_URL` es obligatoria — `app.py` lanza un `RuntimeError` claro si falta, sin fallback local.
 
-/tests
+* Railway/Heroku entregan la variable con esquema `postgres://`; SQLAlchemy 2.x sólo reconoce `postgresql://` — `app.py` reescribe el prefijo automáticamente.
+* No hay Alembic. `db.create_all()` sólo crea tablas nuevas, no altera una existente para sumarle una columna — mientras la base esté vacía no importa, pero en cuanto haya datos reales, agregar un campo va a requerir un `ALTER TABLE` manual (sintaxis Postgres: `DEFAULT TRUE`, `TIMESTAMPTZ`, no la de SQLite) o introducir Alembic.
+* Postgres exige integridad referencial; SQLite no, por defecto. No hay ningún `.delete()` en el código hoy (se prefiere desactivar, ver arriba) — si se agrega uno, usar `db.session.delete(instancia)`, no `Query.delete()` en bloque, para que el `cascade` de las relaciones funcione.
+* Usar siempre tipos de SQLAlchemy dialecto-agnósticos en los modelos (`db.Boolean`, `db.DateTime(timezone=True)`, `db.JSON`, etc.), nunca SQL crudo específico de un motor — es lo que permitió migrar de SQLite a Postgres sin tocar `models/monitoring.py`.
 
----
+## Librerías base — no reimplementar su lógica
 
-Toda la lógica de negocio debe vivir dentro de la carpeta services.
+* **[checkdmarc](https://github.com/domainaware/checkdmarc)**: motor principal para SPF/DMARC/BIMI/MTA-STS/TLS-RPT/MX/DNSSEC/NS/SOA. Usarla siempre que sea posible.
+* **[dkimpy](https://pypi.org/project/dkimpy/)**: única responsable de todo lo relacionado a DKIM (validar, firmar, ARC, RSA/Ed25519), apoyada en `dnspython` para las consultas DNS.
+* **[parsedmarc](https://github.com/domainaware/parsedmarc)** (mismo autor que checkdmarc): ingesta/parseo de reportes DMARC agregados y SMTP TLS vía IMAP — sólo para monitoreo continuo, no para el checker puntual. **Consultar siempre su documentación** ante dudas de `config.ini`, variables `PARSEDMARC_*`, o el esquema del JSON que produce — no asumir sintaxis.
 
-Las rutas únicamente deben recibir la petición HTTP y delegar el procesamiento al servicio correspondiente.
+## Pendiente (fuera del alcance de código)
 
----
-
-## Requisitos
-
-* Código limpio.
-* Uso de Blueprints.
-* Manejo de excepciones.
-* Validación de parámetros.
-* Respuestas JSON consistentes.
-* Logging.
-* Preparado para Docker.
-* Preparado para producción.
-* Fácil de extender con nuevos protocolos.
-
----
+* Crear la casilla de correo real (`DMARC_REPORTS_MAILBOX`) y su TXT de verificación de destino externo (RFC 7489 §7.1) si vive en otro dominio.
+* Desplegar el worker de parsedmarc como servicio aparte en Railway (`config/parsedmarc.ini.example`).
+* Prueba end-to-end con reportes reales (tardan 24-48h en llegar).
 
 ## Restricciones
 
-* No duplicar la lógica existente en checkdmarc.
-* Utilizar checkdmarc siempre que sea posible.
-* Utilizar dkimpy únicamente para todo lo relacionado con DKIM.
-* Mantener una arquitectura desacoplada que permita sustituir cualquiera de las librerías en el futuro sin afectar el resto del sistema.
-
-## Objetivo final
-
-Construir una API REST profesional que sirva como backend para una plataforma de análisis y monitoreo de autenticación de correo, similar a servicios como DMARCGuard, PowerDMARC o EasyDMARC, enfocándose inicialmente en la validación de configuraciones y dejando preparada la arquitectura para incorporar en el futuro funcionalidades como procesamiento de reportes DMARC (RUA), monitoreo continuo, alertas, almacenamiento histórico y paneles de administración.
+* No duplicar lógica ya resuelta por `checkdmarc`, `dkimpy` o `parsedmarc`.
+* `dkimpy` únicamente para todo lo relacionado con DKIM.
+* Arquitectura desacoplada: cualquiera de estas librerías debe poder sustituirse sin afectar el resto del sistema.
