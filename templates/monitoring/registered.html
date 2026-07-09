@@ -78,7 +78,71 @@
         </div>
       </div>
 
-      <div class="flex items-center justify-between mt-3 mb-1.5">
+      <div class="mt-4 pt-4 border-t border-zinc-800/70">
+        <span class="block mb-3 text-zinc-500 uppercase tracking-wide text-[10px]">Personalizar política (opcional)</span>
+        <form
+          hx-post="{{ url_for('monitoring_dns_preview') }}"
+          hx-target="#dns-value-value"
+          hx-swap="outerHTML"
+          hx-trigger="change, input delay:300ms"
+          class="space-y-3"
+        >
+          <input type="hidden" name="rua" value="{{ dns.rua }}">
+          <input type="hidden" name="ruf" value="{{ dns.ruf }}">
+
+          <div>
+            <span class="block mb-1.5 text-[11px] text-zinc-500">Política de aplicación (p)</span>
+            <div class="flex flex-wrap gap-2">
+              {% for value, label in [('none', 'Ninguno'), ('quarantine', 'Cuarentena'), ('reject', 'Rechazar')] %}
+              <label class="cursor-pointer">
+                <input type="radio" name="p" value="{{ value }}" class="peer sr-only" {% if dns.policy.p == value %}checked{% endif %}>
+                <span class="inline-block text-[11px] uppercase tracking-wide border border-zinc-800 rounded px-3 py-1.5 text-zinc-400 peer-checked:border-[#ef5184]/60 peer-checked:text-[#ef5184] transition-colors">{{ label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div>
+            <span class="block mb-1.5 text-[11px] text-zinc-500">Política de subdominios (sp)</span>
+            <div class="flex flex-wrap gap-2">
+              {% for value, label in [('', 'Igual que p'), ('none', 'Ninguno'), ('quarantine', 'Cuarentena'), ('reject', 'Rechazar')] %}
+              <label class="cursor-pointer">
+                <input type="radio" name="sp" value="{{ value }}" class="peer sr-only" {% if dns.policy.sp == value %}checked{% endif %}>
+                <span class="inline-block text-[11px] uppercase tracking-wide border border-zinc-800 rounded px-3 py-1.5 text-zinc-400 peer-checked:border-[#ef5184]/60 peer-checked:text-[#ef5184] transition-colors">{{ label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] text-zinc-500">Porcentaje aplicado (pct)</span>
+              <span id="pct-label" class="text-[11px] text-zinc-300">{{ dns.policy.pct }}%</span>
+            </div>
+            <input
+              type="range" name="pct" min="0" max="100" step="5" value="{{ dns.policy.pct }}"
+              hx-on:input="document.getElementById('pct-label').textContent = this.value + '%'"
+              class="w-full accent-[#ef5184]"
+            >
+          </div>
+
+          <div class="flex flex-wrap gap-4">
+            <label class="inline-flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
+              <input type="checkbox" name="adkim" value="s" {% if dns.policy.adkim == 's' %}checked{% endif %} class="accent-[#ef5184]">
+              Alineación DKIM estricta
+            </label>
+            <label class="inline-flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
+              <input type="checkbox" name="aspf" value="s" {% if dns.policy.aspf == 's' %}checked{% endif %} class="accent-[#ef5184]">
+              Alineación SPF estricta
+            </label>
+          </div>
+        </form>
+        <p class="mt-3 text-[10px] text-zinc-600">
+          Estos controles sólo actualizan la vista previa de abajo — no publican nada, y no afectan lo que ya verificamos.
+        </p>
+      </div>
+
+      <div class="flex items-center justify-between mt-4 mb-1.5">
         <span class="text-zinc-500 uppercase tracking-wide text-[10px]">Valor</span>
         <button
           type="button"

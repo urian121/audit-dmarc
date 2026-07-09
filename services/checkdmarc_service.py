@@ -1,7 +1,7 @@
-import re
-
 from checkdmarc import check_dmarc, check_domains
 import dkim
+
+from utils.dmarc_builder import build_dmarc_value
 
 # Selectores DKIM más comunes en proveedores de correo (Google Workspace,
 # Microsoft 365, SendGrid, Mailchimp, etc.). checkdmarc no reporta DKIM, así
@@ -52,23 +52,11 @@ def run_check(domain, extra_selector=None):
     return result
 
 
-def merge_rua_into_dmarc_record(raw_record, mailbox):
-    """Agrega `mailbox` al tag rua= de un registro DMARC crudo (o se lo agrega si no tenía)."""
-    rua_pattern = re.compile(r"(rua=)([^;]*)", re.IGNORECASE)
-    match = rua_pattern.search(raw_record)
-    target = f"mailto:{mailbox}"
-
-    if match:
-        existing_value = match.group(2).strip()
-        if mailbox in existing_value:
-            return raw_record  # ya está agregado, no duplicar
-        new_value = f"{existing_value},{target}"
-        return raw_record[:match.start(2)] + new_value + raw_record[match.end(2):]
-
-    record = raw_record.rstrip()
-    if not record.endswith(";"):
-        record += ";"
-    return f"{record} rua={target}"
+def _mailto_addresses(tag):
+    """Extrae la lista de direcciones (sin el prefijo mailto:) de un tag rua/ruf ya parseado por checkdmarc."""
+    if not tag:
+        return []
+    return [entry["address"] for entry in tag.get("value") or [] if entry.get("address")]
 
 
 def dns_has_mailbox_in_rua(domain, mailbox):
@@ -78,23 +66,21 @@ def dns_has_mailbox_in_rua(domain, mailbox):
     except Exception:
         return False
 
-    record = result.get("record") if not result.get("error") else None
-    if not record:
+    if result.get("error"):
         return False
 
-    rua_match = re.search(r"rua=([^;]*)", record, re.IGNORECASE)
-    if not rua_match:
-        return False
-
-    return mailbox.lower() in rua_match.group(1).lower()
+    tags = result.get("tags") or {}
+    return mailbox.lower() in [a.lower() for a in _mailto_addresses(tags.get("rua"))]
 
 
 def build_dmarc_dns_instructions(domain, mailbox):
-    """Arma el registro DNS exacto (host/tipo/valor) que hay que publicar para recibir reportes DMARC.
+    """Arma el registro DNS (host/tipo/valor) que hay que publicar, más la política actual para editarla.
 
-    Si el dominio ya tiene un registro DMARC, fusiona `mailbox` a su rua= existente
-    (conservando el resto tal cual). Si no tiene ninguno, sugiere uno nuevo en modo
-    "sólo monitoreo" (p=none), que no bloquea ningún correo.
+    Si el dominio ya tiene un registro DMARC, reconstruye su valor a partir de los tags ya
+    parseados por checkdmarc, agregando `mailbox` a su rua= si no estaba. Si no tiene ninguno,
+    arma uno nuevo en modo "sólo monitoreo" (p=none), que no bloquea ningún correo. En ambos
+    casos devuelve también `policy` (p/sp/pct/adkim/aspf) y `rua`/`ruf` sueltos, para que el
+    generador interactivo de la UI pueda recalcular `value` sin volver a consultar el DNS.
     """
     try:
         result = check_dmarc(domain, timeout=5)
@@ -102,14 +88,29 @@ def build_dmarc_dns_instructions(domain, mailbox):
         result = {}
 
     existing_record = result.get("record") if not result.get("error") else None
-    if existing_record:
-        value = merge_rua_into_dmarc_record(existing_record, mailbox)
-    else:
-        value = f"v=DMARC1; p=none; rua=mailto:{mailbox}"
+    tags = result.get("tags") or {}
+
+    rua_addresses = _mailto_addresses(tags.get("rua"))
+    if mailbox not in rua_addresses:
+        rua_addresses.append(mailbox)
+    rua = ",".join(f"mailto:{address}" for address in rua_addresses)
+    ruf = ",".join(f"mailto:{address}" for address in _mailto_addresses(tags.get("ruf")))
+
+    p = (tags.get("p") or {}).get("value") or "none"
+    sp_tag = tags.get("sp") or {}
+    sp = sp_tag.get("value") if sp_tag.get("explicit") else ""
+    pct = (tags.get("pct") or {}).get("value") or 100
+    adkim = (tags.get("adkim") or {}).get("value") or "r"
+    aspf = (tags.get("aspf") or {}).get("value") or "r"
+
+    value = build_dmarc_value(rua, ruf, p, sp, pct, adkim, aspf)
 
     return {
         "host": f"_dmarc.{domain}",
         "type": "TXT",
         "value": value,
         "has_existing_record": bool(existing_record),
+        "policy": {"p": p, "sp": sp, "pct": pct, "adkim": adkim, "aspf": aspf},
+        "rua": rua,
+        "ruf": ruf,
     }

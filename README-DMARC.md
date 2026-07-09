@@ -6,6 +6,9 @@ Medir el porcentaje de correos autenticados correctamente.
 Generar alertas o dashboards sobre problemas de entrega o seguridad.
 Ajustar reglas sin tener que editar manualmente registros DNS todo el tiempo.
 
+PARA QUE SIRVE ESTA RUTA
+/webhooks/dmarc-aggregate/<secret>
+
 
 APIs que permiten gestionar, monitorear y analizar implementaciones de DMARC (muchas también incluyen SPF y DKIM).
 

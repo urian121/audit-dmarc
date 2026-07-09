@@ -9,6 +9,7 @@ from models import db
 from services.ai_summary import generate_summary
 from services.card_builder import build_cards, build_summary
 from services.checkdmarc_service import build_dmarc_dns_instructions, run_check
+from utils.dmarc_builder import build_dmarc_value
 from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns
 from services.reports_service import ingest_aggregate_report
 from utils.domain_validation import is_valid_domain
@@ -145,6 +146,21 @@ def monitoring_register():
         already_existed=not created,
         dns=build_dmarc_dns_instructions(domain, DMARC_REPORTS_MAILBOX),
     )
+
+
+@app.route("/monitoreo/dns/preview", methods=["POST"])
+def monitoring_dns_preview():
+    """htmx: recalcula el Valor del registro DMARC según los controles de política (p/sp/pct/adkim/aspf) del generador."""
+    value = build_dmarc_value(
+        rua=request.form.get("rua", ""),
+        ruf=request.form.get("ruf", ""),
+        p=request.form.get("p", "none"),
+        sp=request.form.get("sp", ""),
+        pct=request.form.get("pct", "100"),
+        adkim="s" if request.form.get("adkim") == "s" else "r",
+        aspf="s" if request.form.get("aspf") == "s" else "r",
+    )
+    return render_template("partials/dns_value_preview.html", value=value)
 
 
 @app.route("/monitoreo/<access_token>/dns", methods=["GET"])
