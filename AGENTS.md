@@ -18,6 +18,12 @@
 * Si hace falta algo de lógica puntual en el cliente, preferir atributos `hx-on:` o `hx-*` declarativos antes que añadir un archivo `.js` nuevo.
 * Todo botón o link estilizado como botón (las acciones principales tipo `bg-[#ef5184] ... text-zinc-950`) debe llevar un ícono SVG inline junto al texto — sin librerías de íconos externas, mismo patrón que el ícono de lupa en el botón "Analizar" de `templates/index.html` (`inline-flex items-center justify-center gap-2` + `<svg>` con `stroke="currentColor"` para heredar el color del texto).
 
+## Barra de progreso de navegación
+
+Las 5 páginas completas (`index.html` y las 4 de `templates/monitoring/`) cargan [Pace.js](https://github.com/CodeByZach/pace) (`pace-theme-default.css` + `pace.min.js`, vía CDN de jsdelivr) al inicio del `<head>`, antes de Tailwind — se eligió sobre NProgress porque Pace es 100% automático (se autoinicia con la carga de la página y también hookea XHR sin escribir código propio), mientras que NProgress requiere llamar manualmente a `.start()`/`.done()` en cada navegación, algo más frágil en una app multi-página como esta (sin router de SPA). El color de la barra se sobreescribe a la marca (`#ef5184`) en `static/css/home.css` (`.pace .pace-progress`). Efecto secundario esperado y aceptado: como Pace hookea XHR globalmente, también se activa durante las búsquedas htmx (`/check`) además de la navegación entre páginas — no rompe nada, sólo se suma al indicador de carga que ya existe ahí.
+
+Los defaults de Pace (`catchupTime: 100`, `initialRate: 0.03`, `minTime: 250`, `ghostTime: 100`) están pensados para páginas más pesadas — en esta app (páginas chicas, cargan rápido) se sentía como que la barra "se arrastraba" hasta el final en vez de reflejar lo rápido que en realidad cargó. Por eso cada plantilla define `window.paceOptions` **antes** de cargar `pace.min.js` (el orden importa: Pace lee esa variable global al iniciar) con `initialRate: 0.3` (el "avance base" cuando no hay señales fuertes de progreso real — con el default de 0.03 es el principal culpable del arrastre lento), `catchupTime: 100`, `ghostTime: 50` y `minTime: 100` (bajados del default para no imponer una animación mínima más larga que la carga real). Si se vuelve a sentir desalineada con la velocidad real, ajustar `initialRate` primero — es el que más se nota en páginas rápidas.
+
 ## Estado actual
 
 Proyecto en etapa inicial. Ya existe una separación básica por capas; todavía faltan `routes/` (Blueprints), `models/`, `exceptions/` y `tests/`.

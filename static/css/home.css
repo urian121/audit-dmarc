@@ -1,5 +1,6 @@
 ::selection { background: #ff578f; }
 body { background-color: #09090b; }
+.pace .pace-progress { background: #ef5184; }
 .bg-grid {
   background-image:
     linear-gradient(to right, rgba(255,255,255,0.09) 1px, transparent 1px),
