@@ -12,6 +12,7 @@ from models.monitoring import (  # noqa: E402
     DomainSnapshot,
     MonitoredDomain,
 )
+from models.user import User  # noqa: E402
 
 __all__ = [
     "db",
@@ -20,4 +21,5 @@ __all__ = [
     "AggregateReport",
     "AggregateRecord",
     "Alert",
+    "User",
 ]

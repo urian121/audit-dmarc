@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Akila - Crear cuenta</title>
+<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace-theme-default.css">
+<script>window.paceOptions = { minTime: 100, ghostTime: 50, catchupTime: 100, initialRate: 0.3 };</script>
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+  integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+  crossorigin="anonymous"
+></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+</head>
+<body class="min-h-screen font-mono text-zinc-300 antialiased">
+
+  <div class="min-h-screen flex flex-col md:flex-row">
+    <div class="hidden md:flex relative flex-1 items-center justify-center overflow-hidden">
+      <div class="absolute inset-0 bg-grid pointer-events-none"></div>
+      <div class="relative flex flex-col items-center gap-3 px-6 text-center">
+        <span class="relative flex w-5 h-5">
+          <span class="radar-wave"></span>
+          <span class="radar-wave"></span>
+          <span class="radar-wave"></span>
+          <span class="relative inline-flex w-5 h-5 rounded-full bg-[#ef5184] shadow-[0_0_16px_3px_rgba(239,81,132,0.6)]"></span>
+        </span>
+        <span class="text-2xl tracking-[0.2em] text-zinc-100 uppercase mt-2">Akila-dmarc</span>
+        <p class="text-sm text-zinc-500 max-w-xs leading-relaxed">Auditoría y monitoreo continuo de autenticación de correo.</p>
+      </div>
+    </div>
+
+    <div class="w-full md:w-[440px] shrink-0 border-l border-zinc-800/80 bg-zinc-900/60 flex items-center">
+      <div class="w-full px-8 py-16">
+        <h1 class="text-2xl text-zinc-100 tracking-tight mb-1">Crear cuenta</h1>
+        <p class="text-sm text-zinc-500 mb-8">Regístrate para monitorear tus dominios</p>
+
+        {% if error %}
+          <p class="mb-4 text-xs text-rose-400">{{ error }}</p>
+        {% endif %}
+
+        <form
+          method="POST"
+          autocomplete="off"
+          class="flex flex-col gap-4"
+          onsubmit="this.querySelectorAll('input').forEach(el => { el.readOnly = true; el.classList.add('opacity-50'); }); this.querySelector('button[type=submit]').disabled = true"
+        >
+          <div>
+            <label class="block mb-1.5 text-[10px] tracking-wide uppercase text-zinc-500">
+              Correo electrónico <span class="text-[#ef5184]">*</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="tu@correo.com"
+              value="{{ email or '' }}"
+              class="w-full bg-zinc-950/70 border border-zinc-800 rounded-md px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-[#ef5184]/60 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-1.5 text-[10px] tracking-wide uppercase text-zinc-500">
+              Contraseña <span class="text-[#ef5184]">*</span>
+            </label>
+            <div class="relative">
+              <input
+                type="password"
+                id="register-password"
+                name="password"
+                required
+                minlength="8"
+                placeholder="Mínimo 8 caracteres"
+                class="w-full bg-zinc-950/70 border border-zinc-800 rounded-md px-4 py-3 pr-11 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-[#ef5184]/60 transition-colors"
+              />
+              <button
+                type="button"
+                title="Mostrar/ocultar contraseña"
+                hx-on:click="const i = document.getElementById('register-password'); i.type = i.type === 'password' ? 'text' : 'password'; this.querySelector('.icon-eye').classList.toggle('hidden'); this.querySelector('.icon-eye-off').classList.toggle('hidden')"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-[#ef5184] transition-colors"
+              >
+                <svg class="icon-eye w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="icon-eye-off w-4 h-4 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                  <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="mt-2 w-full px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 text-sm font-semibold tracking-wide transition-colors inline-flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <line x1="19" y1="8" x2="19" y2="14"></line>
+              <line x1="22" y1="11" x2="16" y2="11"></line>
+            </svg>
+            Crear cuenta
+          </button>
+        </form>
+
+        <p class="mt-6 text-[12px] text-zinc-600">
+          ¿Ya tienes cuenta?
+          <a href="{{ url_for('auth_login') }}" class="text-[#ef5184] hover:underline">Inicia sesión</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

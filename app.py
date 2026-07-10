@@ -3,9 +3,11 @@ import secrets
 
 from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
+from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 
-from models import db
+from models import User, db
 from services.ai_summary import generate_summary
+from services.auth_service import authenticate, register_user
 from services.card_builder import build_cards, build_risks, build_summary
 from services.checkdmarc_service import build_dmarc_dns_instructions, build_extra_dns_instructions, run_check
 from utils.dmarc_builder import build_dmarc_value
@@ -19,6 +21,22 @@ from utils.domain_validation import is_valid_domain
 load_dotenv()
 
 app = Flask(__name__)
+
+# Sesiones de login. Sin SECRET_KEY en el entorno, se genera una al azar en
+# cada arranque — funciona, pero invalida las sesiones activas en cada
+# reinicio/deploy. Para sesiones persistentes, definir SECRET_KEY en .env/Railway.
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+
+login_manager = LoginManager()
+login_manager.login_view = "auth_login"
+login_manager.init_app(app)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Carga el usuario de la sesión activa a partir de su id."""
+    return User.query.get(int(user_id))
+
 
 # Monitoreo continuo (fases 1-7 del plan): persistencia en Postgres. No hay
 # fallback a SQLite — DATABASE_URL es obligatoria (ver AGENTS.md). Railway la
@@ -36,6 +54,11 @@ if database_url.startswith("postgres://"):
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# pool_pre_ping: antes de reusar una conexión del pool, verifica que siga viva.
+# Sin esto, si el servidor de Postgres cierra una conexión inactiva (timeout,
+# reinicio, etc.), la siguiente consulta falla con "server closed the
+# connection unexpectedly" en vez de reconectar sola.
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 db.init_app(app)
 with app.app_context():
     db.create_all()
@@ -62,8 +85,9 @@ def render_result(domain, extra_selector=None):
 
 
 @app.route("/", methods=["GET"])
+@login_required
 def inicio():
-    """Sirve la página principal; si viene ?domain=, renderiza el resultado directamente (SSR)."""
+    """Sirve la página principal (requiere sesión); si viene ?domain=, renderiza el resultado directamente (SSR)."""
     domain = request.args.get("domain", "").strip().lower()
     context = {"domain": domain}
     if domain:
@@ -78,8 +102,9 @@ def inicio():
 
 
 @app.route("/check", methods=["POST"])
+@login_required
 def check_partial():
-    """Endpoint HTML consumido por htmx (hx-post) — devuelve un fragmento renderizado."""
+    """Endpoint HTML consumido por htmx (hx-post), requiere sesión — devuelve un fragmento renderizado."""
     domain = request.form.get("domain", "").strip().lower()
     selector = request.form.get("selector") or None
 
@@ -100,15 +125,67 @@ def check_partial():
 
 @app.route("/api/check/<domain>", methods=["GET"])
 def check(domain):
-    """API JSON: ejecuta la auditoría del dominio indicado y la devuelve completa."""
+    """API JSON pública (sin sesión, a propósito): ejecuta la auditoría del dominio indicado y la devuelve completa."""
     custom_selector = request.args.get("selector")
     result = run_check(domain, custom_selector)
     return jsonify(result)
 
 
+@app.route("/registro", methods=["GET", "POST"])
+def auth_register():
+    """Crea una cuenta nueva; si se crea con éxito, inicia sesión y va al checker."""
+    if current_user.is_authenticated:
+        return redirect(url_for("inicio"))
+    if request.method == "GET":
+        return render_template("auth/register.html")
+
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+
+    if "@" not in email:
+        return render_template("auth/register.html", error="Ingresa un correo válido.", email=email)
+    if len(password) < 8:
+        return render_template("auth/register.html", error="La contraseña debe tener al menos 8 caracteres.", email=email)
+
+    user, error = register_user(email, password)
+    if error:
+        return render_template("auth/register.html", error=error, email=email)
+
+    login_user(user)
+    return redirect(url_for("inicio"))
+
+
+@app.route("/ingresar", methods=["GET", "POST"])
+def auth_login():
+    """Inicia sesión con correo + contraseña; redirige a `next` si venía de una ruta protegida, o al checker."""
+    if current_user.is_authenticated:
+        return redirect(url_for("inicio"))
+    if request.method == "GET":
+        return render_template("auth/login.html")
+
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+
+    user = authenticate(email, password)
+    if not user:
+        return render_template("auth/login.html", error="Correo o contraseña incorrectos.", email=email)
+
+    login_user(user)
+    next_url = request.args.get("next")
+    return redirect(next_url or url_for("inicio"))
+
+
+@app.route("/salir", methods=["POST"])
+def auth_logout():
+    """Cierra la sesión activa y va directo al login (evita el redirect de más hacia `/` que rebotaría igual)."""
+    logout_user()
+    return redirect(url_for("auth_login"))
+
+
 @app.route("/monitoreo", methods=["GET", "POST"])
+@login_required
 def monitoring_register():
-    """Formulario de alta de un dominio para monitoreo continuo (vigilancia DNS + reportes DMARC)."""
+    """Formulario de alta de un dominio para monitoreo continuo (vigilancia DNS + reportes DMARC) — requiere sesión."""
     if request.method == "GET":
         return render_template("monitoring/register.html")
 
@@ -128,7 +205,13 @@ def monitoring_register():
             domain=domain, owner_email=owner_email,
         )
 
-    monitored, created = register_domain(domain, owner_email)
+    monitored, created = register_domain(domain, owner_email, current_user.id)
+    if monitored is None:
+        return render_template(
+            "monitoring/register.html",
+            error="Ese dominio ya está siendo monitoreado por otra cuenta.",
+            domain=domain, owner_email=owner_email,
+        )
     return render_template(
         "monitoring/registered.html",
         monitored=monitored,
@@ -180,9 +263,10 @@ def monitoring_verify_dns(access_token):
 
 
 @app.route("/monitoreo/lista", methods=["GET"])
+@login_required
 def monitoring_list():
-    """Lista pública de todos los dominios registrados para monitoreo (sin protección — decisión explícita)."""
-    return render_template("monitoring/list.html", monitored_domains=list_domains())
+    """Lista de los dominios registrados para monitoreo por el usuario logueado — requiere sesión."""
+    return render_template("monitoring/list.html", monitored_domains=list_domains(current_user.id))
 
 
 @app.route("/monitoreo/<access_token>", methods=["GET"])

@@ -228,11 +228,23 @@
           No tiene SPF todavía. No hay un valor único que sirva para todos — tiene que incluir exactamente los servidores que usas para enviar correo desde este dominio; si falta alguno, ese correo puede llegar a spam o rechazarse. Junta la lista completa con los puntos de abajo, y publícalo como TXT en <code class="text-zinc-300">{{ monitored.domain }}</code> (mismo lugar que el DMARC, pero sin el <code class="text-zinc-300">_dmarc.</code> delante).
         </p>
 
-        {% if extra_dns.spf.provider.label %}
-          <p class="text-[12px] text-zinc-400 leading-relaxed mb-2">
-            Detectamos por tus registros MX que tu correo <strong class="text-zinc-300">entrante</strong> pasa por <strong class="text-zinc-300">{{ extra_dns.spf.provider.label }}</strong>. Si también es tu proveedor para <strong class="text-zinc-300">enviar</strong> correo, este es un punto de partida:
-          </p>
-          <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5 mb-3">v=spf1 {{ extra_dns.spf.provider.include }} ~all</pre>
+        {% if extra_dns.spf.provider.hosts %}
+          <p class="text-[11px] text-zinc-500 mb-1.5">Tus servidores de correo entrante (MX) — pueden darte una pista de tu proveedor real de envío:</p>
+          <div class="flex flex-wrap gap-1.5 mb-3">
+            {% for host in extra_dns.spf.provider.hosts %}
+              <span class="text-[11px] bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-zinc-300">{{ host }}</span>
+            {% endfor %}
+          </div>
+          {% if extra_dns.spf.provider.label %}
+            <p class="text-[12px] text-zinc-400 leading-relaxed mb-2">
+              Reconocimos que corresponden a <strong class="text-zinc-300">{{ extra_dns.spf.provider.label }}</strong>. Si también es tu proveedor para <strong class="text-zinc-300">enviar</strong> correo (no siempre es el mismo), este es un punto de partida:
+            </p>
+            <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5 mb-3">v=spf1 {{ extra_dns.spf.provider.include }} ~all</pre>
+          {% else %}
+            <p class="text-[11px] text-zinc-500 leading-relaxed mb-3">
+              No los reconocimos automáticamente — busca esos nombres de servidor en internet o revisa el panel de tu proveedor de correo para identificar a quién corresponden.
+            </p>
+          {% endif %}
         {% endif %}
 
         <p class="text-[11px] text-zinc-500 leading-relaxed mb-1.5">Antes de publicar, revisa si además envías correo desde:</p>

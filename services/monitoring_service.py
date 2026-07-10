@@ -3,15 +3,20 @@ from models.monitoring import utcnow
 from services.checkdmarc_service import dns_has_mailbox_in_rua
 
 
-def register_domain(domain, owner_email):
-    """Da de alta un dominio para monitoreo continuo; si ya estaba registrado pero inactivo, lo reactiva."""
+def register_domain(domain, owner_email, user_id):
+    """Da de alta un dominio para monitoreo continuo bajo `user_id`; si ya estaba registrado por el mismo usuario pero inactivo, lo reactiva.
+
+    Devuelve (None, False) si el dominio ya está registrado por otro usuario.
+    """
     existing = MonitoredDomain.query.filter_by(domain=domain).first()
     if existing:
+        if existing.user_id != user_id:
+            return None, False
         if not existing.is_active:
             existing.is_active = True
             db.session.commit()
         return existing, False
-    monitored = MonitoredDomain(domain=domain, owner_email=owner_email)
+    monitored = MonitoredDomain(domain=domain, owner_email=owner_email, user_id=user_id)
     db.session.add(monitored)
     db.session.commit()
     return monitored, True
@@ -43,9 +48,9 @@ def set_active(access_token, is_active):
     return monitored
 
 
-def list_domains():
-    """Devuelve todos los dominios registrados para monitoreo, más recientes primero."""
-    return MonitoredDomain.query.order_by(MonitoredDomain.created_at.desc()).all()
+def list_domains(user_id):
+    """Devuelve los dominios registrados para monitoreo por este usuario, más recientes primero."""
+    return MonitoredDomain.query.filter_by(user_id=user_id).order_by(MonitoredDomain.created_at.desc()).all()
 
 
 def get_dashboard_data(access_token):

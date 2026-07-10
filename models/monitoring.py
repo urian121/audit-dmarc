@@ -20,6 +20,10 @@ class MonitoredDomain(db.Model):
     __tablename__ = "monitored_domains"
 
     id = db.Column(db.Integer, primary_key=True)
+    # Nullable a propósito: quedaron 3 dominios reales registrados antes de que
+    # existiera el login — se backfillean a mano una vez el dueño cree su cuenta.
+    # Todo registro nuevo (register_domain()) siempre lo completa.
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
     domain = db.Column(db.String(255), unique=True, nullable=False, index=True)
     owner_email = db.Column(db.String(255), nullable=False)
     access_token = db.Column(
