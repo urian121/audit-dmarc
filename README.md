@@ -91,9 +91,17 @@ El archivo real (`config/parsedmarc.ini`, no el `.example`) está en `.gitignore
 
 **Estado actual (recordatorio)**: ya existe un servicio `parsedmarc-worker` desplegado en Railway, en el mismo proyecto que la app web (`akila-dmarc`). Corre `parsedmarc` de forma continua, escucha por IMAP la casilla configurada en sus variables `PARSEDMARC_IMAP_*`, y manda cada reporte agregado que encuentra a `https://akila-dmarc-production.up.railway.app/webhooks/dmarc-aggregate/<DMARC_WEBHOOK_SECRET>` (el secreto real está sólo en las variables de Railway de ambos servicios, no acá).
 
+Notas rápidas para no confundir estas variables entre sí:
+
+* `DMARC_REPORTS_MAILBOX` y `DMARC_WEBHOOK_SECRET` (de la app web) sólo le dicen a esta app a qué casilla apuntar el `rua=` y qué secreto exigir en el webhook — no son credenciales de acceso a la casilla.
+* Las credenciales IMAP de la casilla (host/usuario/password) van en las `PARSEDMARC_IMAP_*` del worker, nunca en `.env` de la app web.
+* `SMTP_*` es para mandar los correos de alerta (`services/notifications.py`) — no tiene relación con recibir reportes.
+
 ### `python jobs/recheck_domains.py`
 
 No es una ruta HTTP — es el job de vigilancia DNS periódica, pensado para correr como cron (ej. cada 6-12h). Reutiliza `run_check()` para cada dominio registrado, compara contra el último chequeo guardado, y genera una alerta si cambió la política DMARC, el SPF o los selectores DKIM encontrados. Al final manda por correo (SMTP, variables `SMTP_*`) todas las alertas pendientes de notificar, incluidas las de remitentes desconocidos generadas por el webhook.
+
+**Estado actual (recordatorio)**: ya existe un servicio `recheck-domains-cron` en Railway (mismo proyecto que `akila-dmarc` y `parsedmarc-worker`), configurado con Cron Schedule — corre este script automáticamente cada tantas horas, sin que nadie lo ejecute a mano. Es el que efectivamente manda las alertas por correo (a Gmail o cualquier proveedor, según `SMTP_*`) cuando detecta un cambio de DNS o un remitente desconocido. Variables que tiene: `DATABASE_URL` (misma base que `akila-dmarc`) y `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASSWORD`/`SMTP_FROM`.
 
 Ver el plan completo de esta funcionalidad (infraestructura de correo, DNS, y las 8 fases) en `AGENTS.md`.
 
