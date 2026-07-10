@@ -4,6 +4,12 @@ API REST en Python + Flask (con un frontend incluido) para validar la configurac
 
 Este proyecto está en una etapa inicial. El objetivo completo, la arquitectura planeada y los endpoints futuros están descritos en [AGENTS.md](AGENTS.md).
 
+# Qué hace la app hoy
+
+**1. Checker puntual** (`/`, `/check`, `/api/check/<domain>`): audita cualquier dominio contra SPF, DMARC, DKIM, MX, DNSSEC, MTA-STS, TLS-RPT, BIMI y NS. Muestra un resumen con IA, cards de "riesgos y qué hacer" con severidad y acción concreta, y no guarda nada — es 100% bajo demanda.
+
+**2. Monitoreo continuo** (`/monitoreo/...`): permite registrar un dominio, genera las instrucciones exactas de DNS para DMARC/TLS-RPT/SPF (con detección de proveedor por MX y generador de política interactivo), verifica en vivo si ya se publicó el cambio, y deja un dashboard con historial de reportes y alertas — persistido en Postgres.
+
 Demo
 
 <p align="center">
@@ -45,6 +51,10 @@ Sirve el frontend: un formulario para ingresar un dominio y ver el resultado del
 
 Endpoint HTML consumido por htmx (`hx-post` del formulario del frontend), recibe `domain` (y opcionalmente `selector`) como campos de formulario. Devuelve un fragmento HTML renderizado con el resultado, no JSON.
 
+### `GET/POST /registro`, `GET/POST /ingresar`, `POST /salir`
+
+Crear cuenta, iniciar sesión y cerrar sesión (`Flask-Login`). Necesarios para usar el checker (`/`, `/check`) y el monitoreo (`/monitoreo`, `/monitoreo/lista`) — la API JSON (`/api/check/<domain>`) y las rutas por `access_token` del dashboard quedan públicas a propósito, ver `AGENTS.md`.
+
 ### `GET /api/check/<domain>`
 
 Ejecuta `checkdmarc.check_domains()` sobre el dominio indicado, agrega el chequeo de DKIM y devuelve todo en JSON.
@@ -59,17 +69,27 @@ DKIM no tiene una ubicación fija en DNS (depende de un selector), así que se p
 curl "http://127.0.0.1:5000/api/check/example.com?selector=mi-selector"
 ```
 
-### `GET/POST /monitoreo`
+### `GET/POST /monitoreo` (requiere sesión)
 
-Alta de un dominio para **monitoreo continuo**: registra el dominio en Postgres (`DATABASE_URL`, obligatoria) y muestra el DNS exacto que hay que agregar (`rua=` apuntando a `DMARC_REPORTS_MAILBOX`) para empezar a recibir reportes DMARC reales. Devuelve un link (`/monitoreo/<token>`) con el dashboard de ese dominio.
+Alta de un dominio para **monitoreo continuo**: registra el dominio en Postgres (`DATABASE_URL`, obligatoria) bajo la cuenta logueada, y muestra el DNS exacto que hay que agregar (`rua=` apuntando a `DMARC_REPORTS_MAILBOX`) para empezar a recibir reportes DMARC reales. Devuelve un link (`/monitoreo/<token>`) con el dashboard de ese dominio.
 
-### `GET /monitoreo/lista`
+### `GET /monitoreo/lista` (requiere sesión)
 
-Lista de todos los dominios registrados para monitoreo, con link a cada dashboard. Es pública y sin protección — decisión explícita, ver `AGENTS.md`.
+Lista de los dominios registrados para monitoreo por la cuenta logueada, con link a cada dashboard. Ver `/registro` e `/ingresar` para crear cuenta e iniciar sesión.
 
 ### `POST /webhooks/dmarc-aggregate/<secret>`
 
 Recibe el JSON de un reporte DMARC agregado ya parseado por [parsedmarc](https://github.com/domainaware/parsedmarc) (configurado como servicio aparte, ver `config/parsedmarc.ini.example`). `<secret>` debe coincidir con `DMARC_WEBHOOK_SECRET`; si no, responde 404. Guarda el reporte y compara los remitentes reales contra el SPF declarado del dominio, generando una alerta por cada IP no reconocida.
+
+### `config/parsedmarc.ini`
+
+No es parte del deploy de esta app — es la configuración del **worker de parsedmarc**, un proceso aparte (Fase 4 del plan, ver `AGENTS.md`) que corre en otro lugar (tu máquina para probar, o un servicio dedicado en Railway) y hace tres cosas: se conecta por IMAP a una casilla dedicada a recibir reportes DMARC, parsea los reportes agregados que encuentra, y le hace `POST` a `/webhooks/dmarc-aggregate/<secret>` de esta app.
+
+El archivo real (`config/parsedmarc.ini`, no el `.example`) está en `.gitignore` a propósito — nunca se sube al repo porque tiene la contraseña de la casilla en texto plano. Para producción, en vez de subir el archivo, se configuran las mismas claves como variables de entorno con prefijo `PARSEDMARC_<SECCIÓN>_<CLAVE>` (ver `.env-example`) — parsedmarc las lee directo, sin necesitar el `.ini`.
+
+**Importante**: la casilla configurada ahí debe ser una **dedicada sólo a recibir reportes DMARC**, nunca una casilla de uso normal — parsedmarc mueve automáticamente cualquier correo que no sea un reporte válido a una carpeta de archivo (`archive_folder`), así que apuntarlo a un correo de trabajo real termina archivando esos correos sin querer.
+
+**Estado actual (recordatorio)**: ya existe un servicio `parsedmarc-worker` desplegado en Railway, en el mismo proyecto que la app web (`akila-dmarc`). Corre `parsedmarc` de forma continua, escucha por IMAP la casilla configurada en sus variables `PARSEDMARC_IMAP_*`, y manda cada reporte agregado que encuentra a `https://akila-dmarc-production.up.railway.app/webhooks/dmarc-aggregate/<DMARC_WEBHOOK_SECRET>` (el secreto real está sólo en las variables de Railway de ambos servicios, no acá).
 
 ### `python jobs/recheck_domains.py`
 
