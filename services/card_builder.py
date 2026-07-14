@@ -19,6 +19,39 @@ STATUS_META = {
 # una recomendación (ADVERTENCIA), no una falla como un SPF/DMARC roto.
 SOFT_ABSENCE_KEYS = ("mta_sts", "smtp_tls_reporting", "bimi")
 
+# Heurística por hostname de NS -> proveedor de DNS. No es oficial ni
+# exhaustiva — sólo para mostrarle al usuario quién administra el DNS del
+# dominio, igual idea que KNOWN_MX_PROVIDERS pero para nameservers.
+KNOWN_DNS_PROVIDERS = [
+    ("Cloudflare", "cloudflare.com"),
+    ("Amazon Route 53", "awsdns"),
+    ("Google Cloud DNS", "googledomains.com"),
+    ("Microsoft Azure DNS", "azure-dns."),
+    ("DNS Made Easy", "dnsmadeeasy.com"),
+    ("NS1", "nsone.net"),
+    ("Akamai Edge DNS", "akam.net"),
+    ("GoDaddy", "domaincontrol.com"),
+    ("Namecheap", "registrar-servers.com"),
+    ("DigitalOcean", "digitalocean.com"),
+    ("Hetzner", "hetzner."),
+    ("Bluehost", "bluehost.com"),
+    ("Hostinger", "dns-parking.com"),
+    ("OVHcloud", "ovh.net"),
+    ("Porkbun", "porkbun.com"),
+    ("Squarespace", "squarespace.com"),
+    ("Gandi", "gandi.net"),
+    ("Vercel", "vercel-dns.com"),
+]
+
+
+def detect_dns_providers(hostnames):
+    """Identifica el/los proveedor(es) de DNS del dominio a partir de sus nameservers, por coincidencia de texto conocida."""
+    found = []
+    for label, needle in KNOWN_DNS_PROVIDERS:
+        if label not in found and any(needle in h.lower() for h in hostnames):
+            found.append(label)
+    return found
+
 # Explicación corta de cada protocolo, mostrada bajo el título de su tarjeta.
 PROTOCOL_HELP = {
     "DNSSEC": "Firma criptográficamente las respuestas DNS del dominio para evitar que sean falsificadas.",
@@ -226,9 +259,11 @@ def ns_card(section):
     status = status_of(section)
     if section.get("error"):
         return base_card("Nameservers", status, "error", message=friendly_error_message(section["error"]))
+    hostnames = section.get("hostnames") or []
     return base_card(
         "Nameservers", status, "list",
-        hostnames=section.get("hostnames") or [],
+        hostnames=hostnames,
+        providers=detect_dns_providers(hostnames),
         warnings=translate_warnings(section.get("warnings")),
     )
 

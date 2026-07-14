@@ -85,6 +85,9 @@
     {% endif %}
 
   {% elif card.kind == 'list' %}
+    {% if card.providers %}
+      <p class="text-[11px] text-zinc-500 mb-2">Proveedor detectado: <span class="text-zinc-300">{{ card.providers|join(', ') }}</span></p>
+    {% endif %}
     <div class="flex flex-wrap gap-1.5">
       {% for h in card.hostnames %}
         <span class="text-[11px] bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-zinc-300">{{ h }}</span>
