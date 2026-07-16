@@ -207,6 +207,8 @@
         {{ copy_text_button('tls-rpt-value') }}
       </div>
       <pre id="tls-rpt-value" class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ extra_dns.tls_rpt.value }}</pre>
+
+      {% include "partials/tls_rpt_verify_status.html" %}
     </div>
 
     <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">

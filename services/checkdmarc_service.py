@@ -88,6 +88,22 @@ def dns_has_mailbox_in_rua(domain, mailbox):
     return mailbox.lower() in [a.lower() for a in _mailto_addresses(tags.get("rua"))]
 
 
+def dns_has_mailbox_in_tls_rpt_rua(domain, mailbox):
+    """Consulta el DNS en vivo y dice si el registro TLS-RPT publicado ahora mismo ya incluye `mailbox` en su rua=."""
+    try:
+        result = check_smtp_tls_reporting(domain, timeout=5)
+    except Exception:
+        return False
+
+    if not result.get("valid"):
+        return False
+
+    tags = result.get("tags") or {}
+    rua_values = (tags.get("rua") or {}).get("value") or []
+    target = f"mailto:{mailbox}".lower()
+    return any(v.lower() == target for v in rua_values)
+
+
 def build_dmarc_dns_instructions(domain, mailbox):
     """Arma el registro DNS (host/tipo/valor) que hay que publicar, más la política actual para editarla.
 

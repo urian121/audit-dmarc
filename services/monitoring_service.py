@@ -1,6 +1,6 @@
 from models import Alert, AggregateReport, MonitoredDomain, db
 from models.monitoring import utcnow
-from services.checkdmarc_service import dns_has_mailbox_in_rua
+from services.checkdmarc_service import dns_has_mailbox_in_rua, dns_has_mailbox_in_tls_rpt_rua
 
 
 def register_domain(domain, owner_email, user_id):
@@ -34,6 +34,17 @@ def verify_dns(access_token, mailbox):
         return None
     monitored.dns_verified = dns_has_mailbox_in_rua(monitored.domain, mailbox)
     monitored.dns_verified_at = utcnow()
+    db.session.commit()
+    return monitored
+
+
+def verify_tls_rpt(access_token, mailbox):
+    """Vuelve a consultar el DNS en vivo y guarda si ya se publicó la casilla de monitoreo en el rua= de TLS-RPT. Devuelve None si el token no existe."""
+    monitored = get_domain_by_token(access_token)
+    if not monitored:
+        return None
+    monitored.tls_rpt_verified = dns_has_mailbox_in_tls_rpt_rua(monitored.domain, mailbox)
+    monitored.tls_rpt_verified_at = utcnow()
     db.session.commit()
     return monitored
 

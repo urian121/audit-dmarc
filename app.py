@@ -11,7 +11,7 @@ from services.auth_service import authenticate, register_user
 from services.card_builder import build_cards, build_risks, build_summary
 from services.checkdmarc_service import build_dns_screen_data, run_check
 from utils.dmarc_builder import build_dmarc_value
-from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns
+from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns, verify_tls_rpt
 from services.reports_service import ingest_aggregate_report
 from utils.domain_validation import is_valid_domain
 
@@ -262,6 +262,15 @@ def monitoring_verify_dns(access_token):
     if monitored is None:
         return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
     return render_template("partials/dns_verify_status.html", monitored=monitored)
+
+
+@app.route("/monitoreo/<access_token>/verificar-tls-rpt", methods=["POST"])
+def monitoring_verify_tls_rpt(access_token):
+    """htmx: vuelve a consultar el DNS en vivo y guarda si ya se publicó la casilla de monitoreo en el rua= de TLS-RPT."""
+    monitored = verify_tls_rpt(access_token, DMARC_REPORTS_MAILBOX)
+    if monitored is None:
+        return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
+    return render_template("partials/tls_rpt_verify_status.html", monitored=monitored)
 
 
 @app.route("/monitoreo/lista", methods=["GET"])
