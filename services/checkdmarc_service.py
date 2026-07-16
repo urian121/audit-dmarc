@@ -137,13 +137,13 @@ def build_dmarc_dns_instructions(domain, mailbox):
     p = (tags.get("p") or {}).get("value") or "none"
     sp_tag = tags.get("sp") or {}
     sp = sp_tag.get("value") if sp_tag.get("explicit") else ""
-    # 25% sólo como sugerencia inicial cuando no hay ningún registro todavía — un
-    # arranque gradual es más seguro que saltar directo al 100% al subir la política
-    # más adelante. Si ya hay un registro (con o sin pct= explícito), se respeta el
-    # valor real publicado (100% es lo que la RFC implica cuando pct está ausente).
-    pct = (tags.get("pct") or {}).get("value") or (25 if not existing_record else 100)
-    adkim = (tags.get("adkim") or {}).get("value") or "r"
-    aspf = (tags.get("aspf") or {}).get("value") or "r"
+    # pct/adkim/aspf SIEMPRE arrancan en el valor conservador (25%, alineación
+    # relajada), sin importar qué haya publicado hoy el dominio en su DMARC real —
+    # a diferencia de p/sp/rua/ruf, este generador es sólo una vista previa para
+    # armar un valor nuevo a publicar, no un espejo del registro existente.
+    pct = 25
+    adkim = "r"
+    aspf = "r"
 
     value = build_dmarc_value(rua, ruf, p, sp, pct, adkim, aspf)
 
