@@ -17,17 +17,53 @@
   crossorigin="anonymous"
 ></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
-</head>
-<body class="min-h-screen font-mono text-zinc-300 antialiased">
+<script>
+  // Descarga el PDF vía fetch (no navegación directa) para poder deshabilitar
+  // el botón exactamente mientras el servidor genera el archivo, y
+  // reactivarlo cuando el blob ya llegó — un <a href> normal no da ninguna
+  // señal a JS de cuándo termina la descarga.
+  function downloadPdfReport(link) {
+    if (link.classList.contains("is-downloading")) return;
+    const label = link.querySelector("[data-label]");
+    const originalText = label ? label.textContent : null;
+    link.classList.add("is-downloading", "opacity-50", "pointer-events-none");
+    if (label) label.textContent = "Generando PDF…";
 
-  <div class="fixed inset-0 bg-grid pointer-events-none"></div>
+    fetch(link.href)
+      .then(function (response) {
+        if (!response.ok) throw new Error("No se pudo generar el PDF.");
+        return response.blob();
+      })
+      .then(function (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      })
+      .catch(function () {
+        alert("No se pudo generar el PDF. Intenta de nuevo.");
+      })
+      .finally(function () {
+        link.classList.remove("is-downloading", "opacity-50", "pointer-events-none");
+        if (label && originalText) label.textContent = originalText;
+      });
+  }
+</script>
+</head>
+<body class="min-h-screen font-mono text-zinc-300 antialiased [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
+
+  <div class="fixed inset-0 bg-grid pointer-events-none print:hidden"></div>
 
   <div class="relative">
 
     {% include "partials/header.html" %}
 
     <!-- Hero / buscador -->
-    <section class="max-w-5xl mx-auto px-6 pt-16 pb-10">
+    <section class="max-w-5xl mx-auto px-6 pt-16 pb-10 print:hidden">
       <h1 class="text-2xl sm:text-3xl text-zinc-100 tracking-tight">
         Auditoría de autenticación de correo<span class="text-[#ef5184] cursor">_</span>
       </h1>

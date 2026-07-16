@@ -1,8 +1,9 @@
 import os
 import secrets
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
-from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
+from flask import Flask, Response, abort, jsonify, redirect, render_template, request, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 
 from models import User, db
@@ -10,6 +11,7 @@ from services.ai_summary import generate_summary
 from services.auth_service import authenticate, register_user
 from services.card_builder import build_cards, build_risks, build_summary
 from services.checkdmarc_service import build_dns_screen_data, run_check
+from services.pdf_service import build_pdf_bytes
 from utils.dmarc_builder import build_dmarc_value
 from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns, verify_tls_rpt
 from services.reports_service import ingest_aggregate_report
@@ -77,19 +79,24 @@ DMARC_REPORTS_MAILBOX = os.environ.get("DMARC_REPORTS_MAILBOX", "reports@tudomin
 DMARC_WEBHOOK_SECRET = os.environ.get("DMARC_WEBHOOK_SECRET")
 
 
-def render_result(domain, extra_selector=None):
-    """Corre la auditoría del dominio, pide el resumen con IA y renderiza el fragmento HTML de resultados."""
+def build_result_context(domain, extra_selector=None):
+    """Corre la auditoría del dominio y arma el contexto compartido por la vista HTML y el PDF de descarga."""
     data = run_check(domain, extra_selector)
     cards = build_cards(data)
-    return render_template(
-        "partials/check_result.html",
-        cards=cards,
-        risks=build_risks(cards, data.get("domain") or domain),
-        summary=build_summary(data),
-        result_domain=data.get("domain"),
-        base_domain=data.get("base_domain"),
-        ai_summary=generate_summary(data.get("domain") or domain, cards),
-    )
+    return {
+        "cards": cards,
+        "risks": build_risks(cards, data.get("domain") or domain),
+        "summary": build_summary(data),
+        "result_domain": data.get("domain"),
+        "base_domain": data.get("base_domain"),
+        "ai_summary": generate_summary(data.get("domain") or domain, cards),
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+    }
+
+
+def render_result(domain, extra_selector=None):
+    """Corre la auditoría del dominio, pide el resumen con IA y renderiza el fragmento HTML de resultados."""
+    return render_template("partials/check_result.html", **build_result_context(domain, extra_selector))
 
 
 @app.route("/", methods=["GET"])
@@ -137,6 +144,26 @@ def check(domain):
     custom_selector = request.args.get("selector")
     result = run_check(domain, custom_selector)
     return jsonify(result)
+
+
+@app.route("/reporte-pdf", methods=["GET"])
+@login_required
+def descargar_pdf():
+    """Genera y descarga el PDF del reporte (ReportLab, sin dependencias de sistema) para el dominio indicado."""
+    domain = request.args.get("domain", "").strip().lower()
+    if not is_valid_domain(domain):
+        abort(404)
+    try:
+        context = build_result_context(domain)
+        pdf_bytes = build_pdf_bytes(context)
+    except Exception as error:
+        return render_template("partials/error.html", message=f"No se pudo generar el PDF: {error}"), 500
+    filename = f"reporte-dmarc-{context['result_domain']}.pdf"
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.route("/registro", methods=["GET", "POST"])

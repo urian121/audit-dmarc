@@ -9,3 +9,4 @@ SQLAlchemy==2.0.36
 psycopg2-binary==2.9.10
 Flask-Login==0.6.3
 parsedmarc==10.2.0
+reportlab==5.0.0

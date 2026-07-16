@@ -105,3 +105,25 @@ input:-webkit-autofill:focus {
   0%, 100% { opacity: .25; }
   50% { opacity: 1; }
 }
+
+/* Reporte impreso/PDF: la paleta de texto está pensada para fondo oscuro
+   (zinc-300/400/500 sobre zinc-900), casi ilegible sobre papel blanco.
+   Se reescribe sólo dentro de #results-wrapper y sólo en @media print,
+   sin afectar la vista normal en pantalla. */
+@media print {
+  #results-wrapper * {
+    color: #18181b !important;
+  }
+  #results-wrapper [class*="bg-zinc-9"],
+  #results-wrapper [class*="bg-zinc-8"] {
+    background-color: #f4f4f5 !important;
+  }
+  #results-wrapper [class*="border-zinc"] {
+    border-width: 1px !important;
+    border-color: #e4e4e7 !important;
+  }
+  #results-wrapper [class*="text-emerald"] { color: #047857 !important; }
+  #results-wrapper [class*="text-amber"] { color: #b45309 !important; }
+  #results-wrapper [class*="text-rose"] { color: #be123c !important; }
+  #results-wrapper [class*="text-[#ef5184]"] { color: #be185d !important; }
+}
