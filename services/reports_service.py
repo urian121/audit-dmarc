@@ -1,4 +1,7 @@
+import re
 from datetime import datetime
+
+from checkdmarc import get_base_domain
 
 from models import Alert, AggregateRecord, AggregateReport, MonitoredDomain, db
 from services.checkdmarc_service import run_check
@@ -81,6 +84,20 @@ def _spf_allowed_targets(domain):
     return {m["value"] for m in parsed.get("mechanisms") or [] if m.get("value")}
 
 
+def _base_domain_keyword(target):
+    """Extrae la etiqueta principal del dominio base de un target de SPF (ej. '_spf.google.com' -> 'google')."""
+    try:
+        base = get_base_domain(target)
+    except Exception:
+        base = target
+    return (base.split(".")[0] if base else "").lower()
+
+
+def _words(text):
+    """Separa un texto en palabras sueltas alfanuméricas, en minúsculas (para comparar nombres de organización)."""
+    return set(re.findall(r"[a-z0-9]+", text.lower()))
+
+
 def detect_unknown_senders(monitored):
     """Compara los remitentes reales de los últimos reportes contra el SPF declarado y alerta por IP nueva.
 
@@ -88,8 +105,19 @@ def detect_unknown_senders(monitored):
     los valores declarados en include:/mx:/a: por coincidencia de texto, no por rangos
     CIDR exactos de ip4:/ip6:. Suficiente para detectar remitentes claramente ajenos
     (ej. un proveedor nunca autorizado); no reemplaza una validación SPF completa.
+
+    Dos formas de matchear texto, porque una sola no alcanza:
+    1. Substring directo entre el nombre de organización y el target completo — cubre
+       nombres de organización cortos que aparecen dentro de un hostname más largo
+       (ej. org "Zoho" dentro de target "sender.zohobooks.com").
+    2. Palabra clave del dominio base del target contra las palabras sueltas del nombre
+       de organización — cubre nombres de organización largos/descriptivos que no son
+       substring literal del target (ej. org "Google (Including Gmail and Google
+       Workspace)" vs. target "_spf.google.com": ninguno es substring del otro, pero
+       "google" es una palabra en ambos).
     """
     allowed = _spf_allowed_targets(monitored.domain)
+    allowed_keywords = {_base_domain_keyword(target) for target in allowed}
     already_alerted_ips = {
         a.related_ip for a in monitored.alerts.filter_by(kind=Alert.KIND_UNKNOWN_SENDER) if a.related_ip
     }
@@ -103,9 +131,9 @@ def detect_unknown_senders(monitored):
             seen_ips.add(record.source_ip)
 
             org = (record.source_asn_org or "").strip()
-            covered = any(
-                org and (org.lower() in target.lower() or target.lower() in org.lower())
-                for target in allowed
+            covered = bool(org) and (
+                any(org.lower() in target.lower() or target.lower() in org.lower() for target in allowed)
+                or bool(allowed_keywords & _words(org))
             )
             if not covered:
                 db.session.add(Alert(

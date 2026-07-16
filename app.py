@@ -9,7 +9,7 @@ from models import User, db
 from services.ai_summary import generate_summary
 from services.auth_service import authenticate, register_user
 from services.card_builder import build_cards, build_risks, build_summary
-from services.checkdmarc_service import build_dmarc_dns_instructions, build_extra_dns_instructions, run_check
+from services.checkdmarc_service import build_dns_screen_data, run_check
 from utils.dmarc_builder import build_dmarc_value
 from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns
 from services.reports_service import ingest_aggregate_report
@@ -212,13 +212,14 @@ def monitoring_register():
             error="Ese dominio ya está siendo monitoreado por otra cuenta.",
             domain=domain, owner_email=owner_email,
         )
+    dns, extra_dns = build_dns_screen_data(domain, DMARC_REPORTS_MAILBOX)
     return render_template(
         "monitoring/registered.html",
         monitored=monitored,
         rua_mailbox=DMARC_REPORTS_MAILBOX,
         already_existed=not created,
-        dns=build_dmarc_dns_instructions(domain, DMARC_REPORTS_MAILBOX),
-        extra_dns=build_extra_dns_instructions(domain, DMARC_REPORTS_MAILBOX),
+        dns=dns,
+        extra_dns=extra_dns,
     )
 
 
@@ -243,13 +244,14 @@ def monitoring_dns(access_token):
     monitored = get_domain_by_token(access_token)
     if monitored is None:
         return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
+    dns, extra_dns = build_dns_screen_data(monitored.domain, DMARC_REPORTS_MAILBOX)
     return render_template(
         "monitoring/registered.html",
         monitored=monitored,
         rua_mailbox=DMARC_REPORTS_MAILBOX,
         already_existed=True,
-        dns=build_dmarc_dns_instructions(monitored.domain, DMARC_REPORTS_MAILBOX),
-        extra_dns=build_extra_dns_instructions(monitored.domain, DMARC_REPORTS_MAILBOX),
+        dns=dns,
+        extra_dns=extra_dns,
     )
 
 

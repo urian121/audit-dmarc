@@ -1,5 +1,5 @@
 def build_dmarc_value(rua, ruf, p, sp="", pct=100, adkim="r", aspf="r"):
-    """Arma el string completo de un registro DMARC v1 a partir de sus tags, omitiendo los que están en su valor default."""
+    """Arma el string completo de un registro DMARC v1 a partir de sus tags — sp/pct se omiten si están en su valor default, adkim/aspf siempre se muestran."""
     parts = ["v=DMARC1", f"p={p or 'none'}"]
 
     if sp and sp != p:
@@ -16,9 +16,7 @@ def build_dmarc_value(rua, ruf, p, sp="", pct=100, adkim="r", aspf="r"):
     if pct_int != 100:
         parts.append(f"pct={pct_int}")
 
-    if adkim == "s":
-        parts.append("adkim=s")
-    if aspf == "s":
-        parts.append("aspf=s")
+    parts.append(f"adkim={adkim or 'r'}")
+    parts.append(f"aspf={aspf or 'r'}")
 
     return "; ".join(parts) + ";"

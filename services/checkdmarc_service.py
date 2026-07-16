@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from checkdmarc import check_bimi, check_dmarc, check_domains, check_mta_sts, check_mx, check_smtp_tls_reporting, check_spf
 import dkim
 
@@ -107,12 +109,23 @@ def build_dmarc_dns_instructions(domain, mailbox):
     if mailbox not in rua_addresses:
         rua_addresses.append(mailbox)
     rua = ",".join(f"mailto:{address}" for address in rua_addresses)
-    ruf = ",".join(f"mailto:{address}" for address in _mailto_addresses(tags.get("ruf")))
+
+    ruf_addresses = _mailto_addresses(tags.get("ruf"))
+    # Sin registro todavía: sugerimos ruf= a la misma casilla que rua= (reportes de
+    # fallos individuales), como punto de partida — si ya existe un registro, se
+    # respeta tal cual (con o sin ruf=), igual que con pct.
+    if not existing_record and not ruf_addresses:
+        ruf_addresses = list(rua_addresses)
+    ruf = ",".join(f"mailto:{address}" for address in ruf_addresses)
 
     p = (tags.get("p") or {}).get("value") or "none"
     sp_tag = tags.get("sp") or {}
     sp = sp_tag.get("value") if sp_tag.get("explicit") else ""
-    pct = (tags.get("pct") or {}).get("value") or 100
+    # 25% sólo como sugerencia inicial cuando no hay ningún registro todavía — un
+    # arranque gradual es más seguro que saltar directo al 100% al subir la política
+    # más adelante. Si ya hay un registro (con o sin pct= explícito), se respeta el
+    # valor real publicado (100% es lo que la RFC implica cuando pct está ausente).
+    pct = (tags.get("pct") or {}).get("value") or (25 if not existing_record else 100)
     adkim = (tags.get("adkim") or {}).get("value") or "r"
     aspf = (tags.get("aspf") or {}).get("value") or "r"
 
@@ -197,10 +210,28 @@ def build_mta_sts_status(domain):
 
 
 def build_extra_dns_instructions(domain, mailbox):
-    """Arma la info complementaria de SPF/TLS-RPT/BIMI/MTA-STS para la pantalla de instrucciones DNS del monitoreo."""
-    return {
-        "spf": build_spf_status(domain),
-        "tls_rpt": build_tls_rpt_instructions(domain, mailbox),
-        "bimi": build_bimi_status(domain),
-        "mta_sts": build_mta_sts_status(domain),
-    }
+    """Arma la info complementaria de SPF/TLS-RPT/BIMI/MTA-STS para la pantalla de instrucciones DNS del monitoreo.
+
+    Corre las 4 consultas en paralelo (son independientes entre sí) — cada una puede
+    tardar hasta 5s si el registro no existe, y encadenadas una tras otra podían sumar
+    hasta ~20s. En paralelo, el tiempo total queda acotado por la más lenta, no por la suma.
+    """
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        spf_future = executor.submit(build_spf_status, domain)
+        tls_rpt_future = executor.submit(build_tls_rpt_instructions, domain, mailbox)
+        bimi_future = executor.submit(build_bimi_status, domain)
+        mta_sts_future = executor.submit(build_mta_sts_status, domain)
+        return {
+            "spf": spf_future.result(),
+            "tls_rpt": tls_rpt_future.result(),
+            "bimi": bimi_future.result(),
+            "mta_sts": mta_sts_future.result(),
+        }
+
+
+def build_dns_screen_data(domain, mailbox):
+    """Arma `dns` + `extra_dns` para la pantalla de instrucciones, corriendo ambos grupos de consultas en paralelo entre sí."""
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        dns_future = executor.submit(build_dmarc_dns_instructions, domain, mailbox)
+        extra_future = executor.submit(build_extra_dns_instructions, domain, mailbox)
+        return dns_future.result(), extra_future.result()

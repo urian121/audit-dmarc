@@ -157,11 +157,11 @@
           <div class="flex flex-wrap gap-4">
             <label class="inline-flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
               <input type="checkbox" name="adkim" value="s" {% if dns.policy.adkim == 's' %}checked{% endif %} class="accent-[#ef5184]">
-              Alineación DKIM estricta
+              Alineación DKIM estricta <code class="text-zinc-600">(adkim=s)</code>
             </label>
             <label class="inline-flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
               <input type="checkbox" name="aspf" value="s" {% if dns.policy.aspf == 's' %}checked{% endif %} class="accent-[#ef5184]">
-              Alineación SPF estricta
+              Alineación SPF estricta <code class="text-zinc-600">(aspf=s)</code>
             </label>
           </div>
         </form>
