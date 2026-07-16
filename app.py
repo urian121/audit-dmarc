@@ -38,6 +38,14 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+@login_manager.unauthorized_handler
+def handle_unauthorized():
+    """Redirige a /ingresar; omite ?next= cuando el destino era la home sin parámetros, para no ensuciar la URL en el caso más común."""
+    if request.path == "/" and not request.query_string:
+        return redirect(url_for("auth_login"))
+    return redirect(url_for("auth_login", next=request.full_path.rstrip("?")))
+
+
 # Monitoreo continuo (fases 1-7 del plan): persistencia en Postgres. No hay
 # fallback a SQLite — DATABASE_URL es obligatoria (ver AGENTS.md). Railway la
 # inyecta solo al agregar el addon de Postgres; en local hay que copiarla a .env.

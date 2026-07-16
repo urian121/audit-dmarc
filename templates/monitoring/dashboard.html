@@ -98,7 +98,7 @@
         <div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
           <div class="flex items-center justify-between mb-1">
             <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 {{ 'border-rose-500/30 text-rose-400 bg-rose-500/10' if alert.kind == 'unknown_sender' else 'border-amber-500/30 text-amber-400 bg-amber-500/10' }}">
-              {{ alert.kind }}
+              {{ alert.kind_label }}
             </span>
             <span class="text-[10px] text-zinc-600">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
           </div>

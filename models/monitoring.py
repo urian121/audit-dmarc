@@ -111,6 +111,13 @@ class Alert(db.Model):
     KIND_DKIM_SELECTOR_CHANGED = "dkim_selector_changed"
     KIND_UNKNOWN_SENDER = "unknown_sender"
 
+    KIND_LABELS = {
+        KIND_POLICY_CHANGED: "Cambio de política DMARC",
+        KIND_SPF_CHANGED: "Cambio de registro SPF",
+        KIND_DKIM_SELECTOR_CHANGED: "Cambio de selector DKIM",
+        KIND_UNKNOWN_SENDER: "Remitente desconocido",
+    }
+
     id = db.Column(db.Integer, primary_key=True)
     monitored_domain_id = db.Column(
         db.Integer, db.ForeignKey("monitored_domains.id"), nullable=False, index=True
@@ -120,3 +127,8 @@ class Alert(db.Model):
     related_ip = db.Column(db.String(64), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
     notified_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    @property
+    def kind_label(self):
+        """Traduce `kind` a un texto legible para mostrar en el dashboard, en vez del valor crudo interno."""
+        return self.KIND_LABELS.get(self.kind, self.kind)
