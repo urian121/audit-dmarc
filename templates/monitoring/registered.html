@@ -83,10 +83,11 @@
     <p class="text-[12px] text-zinc-500 mb-6 pl-11">Configuración DMARC sugerida para este dominio</p>
 
     <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase">Falta un paso: publica este registro DNS</h2>
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase">DMARC</h2>
         <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-500/30 text-amber-400 bg-amber-500/10 shrink-0">REQUERIDO</span>
       </div>
+      <p class="text-[11px] text-zinc-500 uppercase tracking-wide mb-3">Falta un paso: publica este registro DNS</p>
       <p class="text-[12px] text-zinc-400 leading-relaxed mb-4">
         {% if dns.has_existing_record %}
           Este dominio ya tiene un registro DMARC — copia el valor de abajo (es el mismo que ya tenías, más nuestra casilla agregada al <code class="text-zinc-300">rua=</code>) y reemplaza el que está publicado hoy en tu proveedor de DNS.
