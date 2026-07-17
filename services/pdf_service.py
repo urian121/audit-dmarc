@@ -59,6 +59,10 @@ SEVERITY_COLORS = {"Alta": STATUS_COLORS["fail"], "Media": STATUS_COLORS["warn"]
 # recorta contra el borde derecho (ReportLab no encoge tablas anidadas solo).
 CARD_PAD = 10
 
+# Tope de remitentes mostrados por reporte en el PDF — ver comentario en
+# _report_flowable() sobre por qué es necesario (LayoutError con reportes grandes).
+MAX_REPORT_RECORDS = 30
+
 
 def _styles():
     """Estilos de párrafo reusados en todo el documento (Helvetica/Courier, base-14: sin fuentes externas).
@@ -328,6 +332,117 @@ def build_pdf_bytes(context):
 
     for card in context["cards"]:
         elements.append(_card_flowable(card, styles, width))
+
+    doc.build(elements, onFirstPage=_draw_page_furniture, onLaterPages=_draw_page_furniture)
+    return buf.getvalue()
+
+
+def _alert_flowable(alert, styles, width):
+    """Caja de una alerta del dashboard de monitoreo: badge de tipo + fecha, y el mensaje debajo."""
+    inner = width - 2 * CARD_PAD
+    badge_color = STATUS_COLORS["fail"] if alert.kind == "unknown_sender" else STATUS_COLORS["warn"]
+    header = Table([[
+        Paragraph(escape(alert.kind_label), ParagraphStyle("alert_badge", parent=styles["card_title"], fontSize=7.5, textColor=badge_color)),
+        Paragraph(escape(alert.created_at.strftime("%Y-%m-%d %H:%M")) + " UTC", ParagraphStyle("alert_ts", parent=styles["muted"], alignment=TA_RIGHT)),
+    ]], colWidths=[inner * 0.5, inner * 0.5])
+    header.setStyle(TableStyle([
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    content = [header, Spacer(1, 4), Paragraph(escape(alert.message), styles["body"])]
+    return KeepTogether([_boxed(content, width=width), Spacer(1, 8)])
+
+
+def _report_flowable(report, styles, width):
+    """Caja de un reporte DMARC agregado: organización + fecha de recepción, y cada remitente real debajo."""
+    inner = width - 2 * CARD_PAD
+    header = Table([[
+        Paragraph(escape(report.org_name or "origen desconocido"), styles["card_title"]),
+        Paragraph(f"recibido {escape(report.received_at.strftime('%Y-%m-%d %H:%M'))} UTC", ParagraphStyle("report_ts", parent=styles["muted"], alignment=TA_RIGHT)),
+    ]], colWidths=[inner * 0.6, inner * 0.4])
+    header.setStyle(TableStyle([
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    content = [header]
+    records = report.records.all() if hasattr(report.records, "all") else list(report.records)
+    # Un reporte real puede traer cientos de remitentes (visto: 414 en uno solo) —
+    # una caja de una sola celda no puede partirse entre páginas, así que sin este
+    # tope un reporte grande revienta el layout entero (LayoutError: caja más alta
+    # que la página). Se recorta y se avisa cuánto quedó afuera, nunca en silencio.
+    shown = records[:MAX_REPORT_RECORDS]
+    for record in shown:
+        org = escape(record.source_asn_org or "sin identificar")
+        country = f", {escape(record.source_country)}" if record.source_country else ""
+        spf_color = STATUS_COLORS["ok"] if record.spf_aligned else STATUS_COLORS["fail"]
+        dkim_color = STATUS_COLORS["ok"] if record.dkim_aligned else STATUS_COLORS["fail"]
+        line = (
+            f'{escape(record.source_ip)} <font color="{_hex(FAINT)}">({org}{country}) &times;{record.count}</font>'
+            f'&nbsp;&nbsp;<font color="{_hex(spf_color)}">spf</font> <font color="{_hex(dkim_color)}">dkim</font>'
+        )
+        content.append(Paragraph(line, styles["body"]))
+    hidden = len(records) - len(shown)
+    if hidden > 0:
+        content.append(Paragraph(f"+ {hidden} remitentes más — revisa el dashboard para la lista completa.", styles["muted"]))
+    return KeepTogether([_boxed(content, width=width), Spacer(1, 8)])
+
+
+def build_dashboard_pdf_bytes(context):
+    """Arma el PDF del dashboard de monitoreo (alertas recientes + reportes DMARC recibidos) de un dominio."""
+    monitored = context["monitored"]
+    styles = _styles()
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=LETTER,
+        topMargin=TOP_MARGIN, bottomMargin=BOTTOM_MARGIN, leftMargin=16 * mm, rightMargin=16 * mm,
+        title=f"Monitoreo DMARC - {monitored.domain}",
+    )
+    width = doc.width
+    elements = [
+        Paragraph(f"{escape(monitored.domain)} &middot; generado el {escape(context['generated_at'])}", styles["subtitle"]),
+        Spacer(1, 2),
+        Paragraph(
+            f"registrado el {escape(monitored.created_at.strftime('%Y-%m-%d'))} &middot; alertas a {escape(monitored.owner_email)}",
+            styles["muted"],
+        ),
+        Spacer(1, 14),
+    ]
+
+    elements.append(Paragraph("ALERTAS RECIENTES", styles["h2"]))
+    elements.append(Paragraph(
+        "Remitentes que enviaron correo en nombre de este dominio pero no están declarados en su SPF. "
+        "No siempre es un ataque — también aparece al agregar una herramienta nueva sin sumarla todavía al SPF — "
+        "pero si no reconoces el remitente, vale la pena investigarlo.",
+        styles["help"],
+    ))
+    elements.append(Spacer(1, 6))
+    alerts = context.get("alerts") or []
+    if alerts:
+        for alert in alerts:
+            elements.append(_alert_flowable(alert, styles, width))
+    else:
+        elements.append(Paragraph("Sin alertas por ahora.", styles["muted"]))
+    elements.append(Spacer(1, 10))
+
+    elements.append(Paragraph("REPORTES DMARC RECIBIDOS", styles["h2"]))
+    elements.append(Paragraph(
+        "Un resumen que cada proveedor de correo (Gmail, Outlook, Mimecast, etc.) manda una vez al día: qué IPs "
+        "enviaron correo en nombre de este dominio, cuántas veces, y si pasaron la validación SPF/DKIM. De aquí "
+        f'sale la información de las alertas de arriba. Las etiquetas <font color="{_hex(STATUS_COLORS["ok"])}">spf</font>/'
+        f'<font color="{_hex(STATUS_COLORS["ok"])}">dkim</font> en verde indican que ese envío pasó esa validación; '
+        f'en <font color="{_hex(STATUS_COLORS["fail"])}">rojo</font>, que falló — un fallo aislado no es grave, pero '
+        "si un mismo remitente falla siempre, vale la pena revisarlo.",
+        styles["help"],
+    ))
+    elements.append(Spacer(1, 6))
+    reports = context.get("reports") or []
+    if reports:
+        for report in reports:
+            elements.append(_report_flowable(report, styles, width))
+    else:
+        elements.append(Paragraph("Sin reportes todavía.", styles["muted"]))
 
     doc.build(elements, onFirstPage=_draw_page_furniture, onLaterPages=_draw_page_furniture)
     return buf.getvalue()

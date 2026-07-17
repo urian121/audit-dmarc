@@ -1,0 +1,37 @@
+<script>
+  // Descarga un PDF vía fetch (no navegación directa) para poder deshabilitar
+  // el botón exactamente mientras el servidor genera el archivo, y
+  // reactivarlo cuando el blob ya llegó — un <a href> normal no da ninguna
+  // señal a JS de cuándo termina la descarga. Compartido entre index.html
+  // (checker) y dashboard.html (monitoreo) — no duplicar esta función.
+  function downloadPdfReport(link) {
+    if (link.classList.contains("is-downloading")) return;
+    const label = link.querySelector("[data-label]");
+    const originalText = label ? label.textContent : null;
+    link.classList.add("is-downloading", "opacity-50", "pointer-events-none");
+    if (label) label.textContent = "Generando PDF…";
+
+    fetch(link.href)
+      .then(function (response) {
+        if (!response.ok) throw new Error("No se pudo generar el PDF.");
+        return response.blob();
+      })
+      .then(function (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      })
+      .catch(function () {
+        alert("No se pudo generar el PDF. Intenta de nuevo.");
+      })
+      .finally(function () {
+        link.classList.remove("is-downloading", "opacity-50", "pointer-events-none");
+        if (label && originalText) label.textContent = originalText;
+      });
+  }
+</script>

@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+{% include "partials/pdf_download_script.html" %}
 </head>
 <body class="min-h-screen font-mono text-zinc-300 antialiased">
 
@@ -38,14 +39,28 @@
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <a
+          href="{{ url_for('monitoring_dashboard_pdf', access_token=monitored.access_token) }}"
+          onclick="event.preventDefault(); downloadPdfReport(this)"
+          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span data-label>Descargar PDF</span>
+        </a>
+        <a
+          id="ver-dns-link"
           href="{{ url_for('monitoring_dns', access_token=monitored.access_token) }}"
+          onclick="this.querySelector('[data-label]').textContent = 'Cargando DNS…'; this.classList.remove('border-zinc-800','text-zinc-300'); this.classList.add('border-[#ef5184]/60','text-[#ef5184]','pointer-events-none');"
           class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
             <polyline points="16 18 22 12 16 6"></polyline>
             <polyline points="8 6 2 12 8 18"></polyline>
           </svg>
-          Ver DNS
+          <span data-label>Ver DNS</span>
         </a>
         <form method="POST" action="{{ url_for('monitoring_toggle', access_token=monitored.access_token) }}">
           <input type="hidden" name="activar" value="{{ '0' if monitored.is_active else '1' }}">
@@ -92,7 +107,12 @@
     </div>
     {% endif %}
 
-    <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-3">Alertas recientes</h2>
+    <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-1">Alertas recientes</h2>
+    <p class="text-[11px] text-zinc-500 leading-relaxed mb-3 max-w-2xl">
+      Remitentes que enviaron correo en nombre de este dominio pero no están declarados en su SPF. No siempre es un ataque —
+      también aparece cuando se agrega una herramienta nueva (marketing, facturación, etc.) sin sumarla todavía al SPF —
+      pero si no reconoces el remitente, vale la pena investigarlo.
+    </p>
     <div class="grid grid-cols-1 gap-3 mb-10">
       {% for alert in alerts %}
         <div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
@@ -109,7 +129,14 @@
       {% endfor %}
     </div>
 
-    <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-3">Reportes DMARC recibidos</h2>
+    <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-1">Reportes DMARC recibidos</h2>
+    <p class="text-[11px] text-zinc-500 leading-relaxed mb-3 max-w-2xl">
+      Un resumen que cada proveedor de correo (Gmail, Outlook, Mimecast, etc.) manda una vez al día: qué IPs enviaron
+      correo en nombre de este dominio, cuántas veces, y si pasaron la validación SPF/DKIM. De aquí sale la información
+      de las alertas de arriba. Las etiquetas <span class="text-emerald-400">spf</span>/<span class="text-emerald-400">dkim</span>
+      en verde indican que ese envío pasó esa validación; en <span class="text-rose-400">rojo</span>, que falló —
+      un fallo aislado no es grave, pero si un mismo remitente falla siempre, vale la pena revisarlo.
+    </p>
     <div class="grid grid-cols-1 gap-3">
       {% for report in reports %}
         <div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
@@ -137,5 +164,19 @@
     </div>
   </div>
 
+  <script>
+    // Al volver con el botón "atrás" del navegador, Chrome/Firefox restauran la
+    // página tal como quedó (bfcache) — incluido el texto "Cargando DNS…" que
+    // dejamos al hacer clic. `pageshow` se dispara también en esos casos (a
+    // diferencia de DOMContentLoaded), así que ahí se repone el estado inicial.
+    window.addEventListener("pageshow", function () {
+      var link = document.getElementById("ver-dns-link");
+      if (!link) return;
+      var label = link.querySelector("[data-label]");
+      if (label) label.textContent = "Ver DNS";
+      link.classList.remove("border-[#ef5184]/60", "text-[#ef5184]", "pointer-events-none");
+      link.classList.add("border-zinc-800", "text-zinc-300");
+    });
+  </script>
 </body>
 </html>

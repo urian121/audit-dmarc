@@ -10,14 +10,14 @@
       <span class="text-sm tracking-[0.2em] text-zinc-200 uppercase">Akila-dmarc</span>
     </a>
     <div class="flex items-center gap-6">
-      <a href="{{ url_for('monitoring_register') }}" class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors">
+      <a href="{{ url_for('monitoring_register') }}" class="inline-flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase border rounded-md px-3 py-1.5 transition-colors {{ 'border-[#ef5184]/60 text-[#ef5184]' if request.endpoint == 'monitoring_register' else 'border-zinc-800 text-zinc-300 hover:border-[#ef5184]/60 hover:text-[#ef5184]' }}">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
           <circle cx="12" cy="12" r="3"></circle>
         </svg>
         Monitoreo
       </a>
-      <a href="{{ url_for('monitoring_list') }}" class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors">
+      <a href="{{ url_for('monitoring_list') }}" class="inline-flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase border rounded-md px-3 py-1.5 transition-colors {{ 'border-[#ef5184]/60 text-[#ef5184]' if request.endpoint in ('monitoring_list', 'monitoring_dashboard', 'monitoring_dns') else 'border-zinc-800 text-zinc-300 hover:border-[#ef5184]/60 hover:text-[#ef5184]' }}">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
           <line x1="8" y1="6" x2="21" y2="6"></line>
           <line x1="8" y1="12" x2="21" y2="12"></line>

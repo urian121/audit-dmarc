@@ -11,7 +11,7 @@ from services.ai_summary import generate_summary
 from services.auth_service import authenticate, register_user
 from services.card_builder import build_cards, build_risks, build_summary
 from services.checkdmarc_service import build_dns_screen_data, run_check
-from services.pdf_service import build_pdf_bytes
+from services.pdf_service import build_dashboard_pdf_bytes, build_pdf_bytes
 from utils.dmarc_builder import build_dmarc_value
 from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns, verify_tls_rpt
 from services.reports_service import ingest_aggregate_report
@@ -273,7 +273,7 @@ def monitoring_dns_preview():
     return render_template("partials/dns_value_preview.html", value=value)
 
 
-@app.route("/monitoreo/<access_token>/dns", methods=["GET"])
+@app.route("/monitoreo/<access_token>/configuracion-dns", methods=["GET"])
 def monitoring_dns(access_token):
     """Vuelve a mostrar las instrucciones de DNS (host/tipo/valor) de un dominio ya registrado."""
     monitored = get_domain_by_token(access_token)
@@ -308,7 +308,7 @@ def monitoring_verify_tls_rpt(access_token):
     return render_template("partials/tls_rpt_verify_status.html", monitored=monitored)
 
 
-@app.route("/monitoreo/lista", methods=["GET"])
+@app.route("/monitoreos/", methods=["GET"])
 @login_required
 def monitoring_list():
     """Lista de los dominios registrados para monitoreo por el usuario logueado — requiere sesión."""
@@ -322,6 +322,25 @@ def monitoring_dashboard(access_token):
     if data is None:
         return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
     return render_template("monitoring/dashboard.html", rua_mailbox=DMARC_REPORTS_MAILBOX, **data)
+
+
+@app.route("/monitoreo/<access_token>/reporte-pdf", methods=["GET"])
+def monitoring_dashboard_pdf(access_token):
+    """Genera y descarga el PDF del dashboard de monitoreo (alertas recientes + reportes DMARC recibidos)."""
+    data = get_dashboard_data(access_token)
+    if data is None:
+        return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
+    try:
+        context = {**data, "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
+        pdf_bytes = build_dashboard_pdf_bytes(context)
+    except Exception as error:
+        return render_template("partials/error.html", message=f"No se pudo generar el PDF: {error}"), 500
+    filename = f"monitoreo-dmarc-{data['monitored'].domain}.pdf"
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.route("/monitoreo/<access_token>/toggle", methods=["POST"])

@@ -53,7 +53,7 @@ Endpoint HTML consumido por htmx (`hx-post` del formulario del frontend), recibe
 
 ### `GET/POST /registro`, `GET/POST /ingresar`, `POST /salir`
 
-Crear cuenta, iniciar sesión y cerrar sesión (`Flask-Login`). Necesarios para usar el checker (`/`, `/check`) y el monitoreo (`/monitoreo`, `/monitoreo/lista`) — la API JSON (`/api/check/<domain>`) y las rutas por `access_token` del dashboard quedan públicas a propósito, ver `AGENTS.md`.
+Crear cuenta, iniciar sesión y cerrar sesión (`Flask-Login`). Necesarios para usar el checker (`/`, `/check`) y el monitoreo (`/monitoreo`, `/monitoreos/`) — la API JSON (`/api/check/<domain>`) y las rutas por `access_token` del dashboard quedan públicas a propósito, ver `AGENTS.md`.
 
 ### `GET /api/check/<domain>`
 
@@ -73,7 +73,7 @@ curl "http://127.0.0.1:5000/api/check/example.com?selector=mi-selector"
 
 Alta de un dominio para **monitoreo continuo**: registra el dominio en Postgres (`DATABASE_URL`, obligatoria) bajo la cuenta logueada, y muestra el DNS exacto que hay que agregar (`rua=` apuntando a `DMARC_REPORTS_MAILBOX`) para empezar a recibir reportes DMARC reales. Devuelve un link (`/monitoreo/<token>`) con el dashboard de ese dominio.
 
-### `GET /monitoreo/lista` (requiere sesión)
+### `GET /monitoreos/` (requiere sesión)
 
 Lista de los dominios registrados para monitoreo por la cuenta logueada, con link a cada dashboard. Ver `/registro` e `/ingresar` para crear cuenta e iniciar sesión.
 
