@@ -134,13 +134,17 @@ def build_dmarc_dns_instructions(domain, mailbox):
         ruf_addresses = list(rua_addresses)
     ruf = ",".join(f"mailto:{address}" for address in ruf_addresses)
 
-    p = (tags.get("p") or {}).get("value") or "none"
+    # p/pct/adkim/aspf SIEMPRE arrancan en el valor conservador ("none", 25%,
+    # alineación relajada), sin importar qué tenga publicado hoy el dominio en
+    # su DMARC real — a diferencia de rua/ruf, este generador es sólo una vista
+    # previa para armar un valor nuevo a publicar, nunca un espejo del registro
+    # existente. Riesgo asumido a propósito (decisión explícita del usuario):
+    # para un dominio que YA hace quarantine/reject, esto sugiere "none" —
+    # copiarlo tal cual BAJA la aplicación real. El texto de
+    # `registered.html` ya no dice "es el mismo que ya tenías" por esto mismo.
+    p = "none"
     sp_tag = tags.get("sp") or {}
     sp = sp_tag.get("value") if sp_tag.get("explicit") else ""
-    # pct/adkim/aspf SIEMPRE arrancan en el valor conservador (25%, alineación
-    # relajada), sin importar qué haya publicado hoy el dominio en su DMARC real —
-    # a diferencia de p/sp/rua/ruf, este generador es sólo una vista previa para
-    # armar un valor nuevo a publicar, no un espejo del registro existente.
     pct = 25
     adkim = "r"
     aspf = "r"

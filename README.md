@@ -93,6 +93,7 @@ El archivo real (`config/parsedmarc.ini`, no el `.example`) está en `.gitignore
 
 Notas rápidas para no confundir estas variables entre sí:
 
+* `DMARC_REPORTS_MAILBOX` **es siempre la misma casilla para TODOS los dominios monitoreados** (la que vigila el worker de parsedmarc por IMAP) — es la que se publica en el `rua=`/`ruf=` de DMARC y en el `rua=` de TLS-RPT de cada dominio, para que los reportes lleguen a esta app. **No confundir con `owner_email`** (el correo que cada quien escribe al registrar un dominio en `/monitoreo`): ese es sólo para mandarle alertas a esa persona (`services/notifications.py`), nunca se publica en DNS. Si en la pantalla de instrucciones de DNS ves siempre el mismo correo en el `rua=` sin importar qué dominio registres, es exactamente esto — no es un bug.
 * `DMARC_REPORTS_MAILBOX` y `DMARC_WEBHOOK_SECRET` (de la app web) sólo le dicen a esta app a qué casilla apuntar el `rua=` y qué secreto exigir en el webhook — no son credenciales de acceso a la casilla.
 * Las credenciales IMAP de la casilla (host/usuario/password) van en las `PARSEDMARC_IMAP_*` del worker, nunca en `.env` de la app web.
 * `SMTP_*` es para mandar los correos de alerta (`services/notifications.py`) — no tiene relación con recibir reportes.

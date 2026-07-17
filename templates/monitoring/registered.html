@@ -90,7 +90,7 @@
       <p class="text-[11px] text-zinc-500 uppercase tracking-wide mb-3">Falta un paso: publica este registro DNS</p>
       <p class="text-[12px] text-zinc-400 leading-relaxed mb-4">
         {% if dns.has_existing_record %}
-          Este dominio ya tiene un registro DMARC — copia el valor de abajo (es el mismo que ya tenías, más nuestra casilla agregada al <code class="text-zinc-300">rua=</code>) y reemplaza el que está publicado hoy en tu proveedor de DNS.
+          Este dominio ya tiene un registro DMARC — el valor de abajo parte de tu configuración real (remitentes, <code class="text-zinc-300">rua=</code>/<code class="text-zinc-300">ruf=</code>, más nuestra casilla agregada), pero la <strong class="text-zinc-300">política de aplicación empieza en modo conservador</strong> ("sólo monitoreo"), sin importar la que tengas publicada hoy — revisa los controles de abajo antes de reemplazar tu registro actual, para no bajar por accidente una aplicación más estricta que ya tenías.
         {% else %}
           Este dominio no tiene ningún registro DMARC todavía. Te sugerimos empezar en modo <strong class="text-zinc-300">"sólo monitoreo"</strong> (<code class="text-zinc-300">p=none</code>): no bloquea ni pone en cuarentena ningún correo, sólo activa la recolección de reportes. Puedes endurecerlo más adelante.
         {% endif %}
