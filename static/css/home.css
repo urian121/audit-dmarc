@@ -55,6 +55,21 @@ input:-webkit-autofill:focus {
 .htmx-request.htmx-indicator,
 .htmx-request .htmx-indicator { display: block; opacity: 1; }
 
+/* Botones "Verificar" (DMARC/TLS-RPT, verify_status.html): htmx agrega la
+   clase htmx-request al propio botón mientras dura el POST (no se declaró
+   hx-indicator, así que cae en el elemento que dispara la petición) — se
+   aprovecha para ocultar la etiqueta normal, mostrar "Verificando…" y cambiar
+   el borde/color, sin importar si el estado de reposo era gris o verde
+   (verificado). !important porque compite con las clases de color de Tailwind
+   ya puestas en el HTML, que si no ganarían por especificidad igual. */
+.verify-btn [data-loading-label] { display: none; }
+.verify-btn.htmx-request [data-label] { display: none; }
+.verify-btn.htmx-request [data-loading-label] { display: inline; }
+.verify-btn.htmx-request {
+  border-color: rgba(239, 81, 132, 0.6) !important;
+  color: #ef5184 !important;
+}
+
 /* Mientras corre una nueva búsqueda, el resultado ANTERIOR (todavía en
    #results-wrapper hasta que llegue la respuesta) se atenúa y se bloquea,
    para que no se confunda con el resultado del dominio recién pedido. */
