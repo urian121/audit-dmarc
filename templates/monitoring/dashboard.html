@@ -113,20 +113,50 @@
       también aparece cuando se agrega una herramienta nueva (marketing, facturación, etc.) sin sumarla todavía al SPF —
       pero si no reconoces el remitente, vale la pena investigarlo.
     </p>
+    {% if alerts %}
+      <p class="text-[11px] text-zinc-600 mb-3">
+        {{ alerts|length }} alerta{{ 's' if alerts|length != 1 }}
+        {%- if alert_groups %} · {{ alert_groups|length }} remitente{{ 's' if alert_groups|length != 1 }} distinto{{ 's' if alert_groups|length != 1 }}{% endif -%}
+        {%- if other_alerts %} · {{ other_alerts|length }} cambio{{ 's' if other_alerts|length != 1 }} de configuración{% endif %}
+      </p>
+    {% endif %}
     <div class="grid grid-cols-1 gap-3 mb-10">
-      {% for alert in alerts %}
+      {% for alert in other_alerts %}
         <div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 {{ 'border-rose-500/30 text-rose-400 bg-rose-500/10' if alert.kind == 'unknown_sender' else 'border-amber-500/30 text-amber-400 bg-amber-500/10' }}">
+            <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-500/30 text-amber-400 bg-amber-500/10">
               {{ alert.kind_label }}
             </span>
             <span class="text-[10px] text-zinc-600">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
           </div>
           <p class="text-[12px] text-zinc-300">{{ alert.message }}</p>
         </div>
-      {% else %}
-        <p class="text-[12px] text-zinc-600">Sin alertas por ahora — buena señal.</p>
       {% endfor %}
+
+      {% for group in alert_groups %}
+        <details class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
+          <summary class="flex items-center justify-between gap-3 cursor-pointer">
+            <span class="flex items-center gap-2 min-w-0">
+              <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-rose-500/30 text-rose-400 bg-rose-500/10 shrink-0">Remitente desconocido</span>
+              <span class="text-[12px] text-zinc-300 truncate">{{ group.org }}</span>
+              <span class="text-[10px] text-zinc-600 shrink-0">&times;{{ group.count }}</span>
+            </span>
+            <span class="text-[10px] text-zinc-600 shrink-0">última vez {{ group.last_seen.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-zinc-800/60 space-y-1.5">
+            {% for alert in group.alerts %}
+              <div class="flex items-center justify-between gap-3 text-[11px]">
+                <span class="text-zinc-400 truncate">{{ alert.message }}</span>
+                <span class="text-zinc-600 shrink-0">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+              </div>
+            {% endfor %}
+          </div>
+        </details>
+      {% endfor %}
+
+      {% if not other_alerts and not alert_groups %}
+        <p class="text-[12px] text-zinc-600">Sin alertas por ahora — buena señal.</p>
+      {% endif %}
     </div>
 
     <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-1">Reportes DMARC recibidos</h2>
@@ -151,8 +181,8 @@
                 <span class="text-zinc-600">({{ record.source_asn_org or 'sin identificar' }}{% if record.source_country %}, {{ record.source_country }}{% endif %}) &times;{{ record.count }}</span>
               </span>
               <span class="flex gap-1 shrink-0">
-                <span class="text-[10px] px-1.5 py-0.5 rounded border {{ 'border-emerald-500/30 text-emerald-400' if record.spf_aligned else 'border-rose-500/30 text-rose-400' }}">spf</span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded border {{ 'border-emerald-500/30 text-emerald-400' if record.dkim_aligned else 'border-rose-500/30 text-rose-400' }}">dkim</span>
+                <span title="{{ 'Este envío pasó la alineación SPF — el dominio autenticado por SPF coincide con el From: del correo.' if record.spf_aligned else 'Este envío NO pasó la alineación SPF — el dominio autenticado por SPF no coincide con el From: del correo.' }}" class="text-[10px] px-1.5 py-0.5 rounded border cursor-help {{ 'border-emerald-500/30 text-emerald-400' if record.spf_aligned else 'border-rose-500/30 text-rose-400' }}">spf</span>
+                <span title="{{ 'Este envío pasó la alineación DKIM — la firma DKIM coincide con el dominio del From:.' if record.dkim_aligned else 'Este envío NO pasó la alineación DKIM — la firma DKIM no coincide con el dominio del From: (o no venía firmado).' }}" class="text-[10px] px-1.5 py-0.5 rounded border cursor-help {{ 'border-emerald-500/30 text-emerald-400' if record.dkim_aligned else 'border-rose-500/30 text-rose-400' }}">dkim</span>
               </span>
             </div>
           {% endfor %}

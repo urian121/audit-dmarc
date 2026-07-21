@@ -1,6 +1,13 @@
+import re
+
 from models import Alert, AggregateReport, MonitoredDomain, db
 from models.monitoring import utcnow
 from services.checkdmarc_service import dns_has_mailbox_in_rua, dns_has_mailbox_in_tls_rpt_rua
+
+# Mismo texto armado en detect_unknown_senders() (reports_service.py) — si se
+# cambia esa frase, ajustar este patrón también, o el agrupado deja de reconocer
+# el nombre del remitente y todo cae en "remitente sin identificar".
+_UNKNOWN_SENDER_ORG_PATTERN = re.compile(r"^Correo enviado desde (.+?) \(")
 
 
 def register_domain(domain, owner_email, user_id):
@@ -72,3 +79,35 @@ def get_dashboard_data(access_token):
     alerts = monitored.alerts.order_by(Alert.created_at.desc()).limit(50).all()
     reports = monitored.aggregate_reports.order_by(AggregateReport.received_at.desc()).limit(20).all()
     return {"monitored": monitored, "alerts": alerts, "reports": reports}
+
+
+def group_unknown_sender_alerts(alerts):
+    """Agrupa las alertas 'remitente desconocido' por organización remitente, para no mostrar una tarjeta por cada IP del mismo remitente repetido.
+
+    Devuelve (grupos, otras_alertas): `otras_alertas` son los demás tipos (cambio de
+    política/SPF/DKIM) — se muestran igual que antes, sin agrupar, porque son
+    poco frecuentes y no tienen el mismo problema de IPs repetidas del mismo origen.
+    Cada grupo trae: org, count, first_seen, last_seen, alerts (todas las de ese grupo).
+    """
+    groups_by_org = {}
+    others = []
+    for alert in alerts:
+        if alert.kind != Alert.KIND_UNKNOWN_SENDER:
+            others.append(alert)
+            continue
+        match = _UNKNOWN_SENDER_ORG_PATTERN.match(alert.message)
+        org = match.group(1) if match else "remitente sin identificar"
+        groups_by_org.setdefault(org, []).append(alert)
+
+    groups = []
+    for org, org_alerts in groups_by_org.items():
+        org_alerts.sort(key=lambda a: a.created_at, reverse=True)
+        groups.append({
+            "org": org,
+            "count": len(org_alerts),
+            "last_seen": org_alerts[0].created_at,
+            "first_seen": org_alerts[-1].created_at,
+            "alerts": org_alerts,
+        })
+    groups.sort(key=lambda g: g["last_seen"], reverse=True)
+    return groups, others

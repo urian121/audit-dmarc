@@ -13,7 +13,7 @@ from services.card_builder import build_cards, build_risks, build_summary
 from services.checkdmarc_service import build_dns_screen_data, run_check
 from services.pdf_service import build_dashboard_pdf_bytes, build_pdf_bytes
 from utils.dmarc_builder import build_dmarc_value
-from services.monitoring_service import get_dashboard_data, get_domain_by_token, list_domains, register_domain, set_active, verify_dns, verify_tls_rpt
+from services.monitoring_service import get_dashboard_data, get_domain_by_token, group_unknown_sender_alerts, list_domains, register_domain, set_active, verify_dns, verify_tls_rpt
 from services.reports_service import ingest_aggregate_report
 from utils.domain_validation import is_valid_domain
 
@@ -321,7 +321,11 @@ def monitoring_dashboard(access_token):
     data = get_dashboard_data(access_token)
     if data is None:
         return render_template("partials/error.html", message="No se encontró ese dashboard."), 404
-    return render_template("monitoring/dashboard.html", rua_mailbox=DMARC_REPORTS_MAILBOX, **data)
+    alert_groups, other_alerts = group_unknown_sender_alerts(data["alerts"])
+    return render_template(
+        "monitoring/dashboard.html", rua_mailbox=DMARC_REPORTS_MAILBOX,
+        alert_groups=alert_groups, other_alerts=other_alerts, **data,
+    )
 
 
 @app.route("/monitoreo/<access_token>/reporte-pdf", methods=["GET"])
