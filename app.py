@@ -48,6 +48,17 @@ def handle_unauthorized():
     return redirect(url_for("auth_login", next=request.full_path.rstrip("?")))
 
 
+@app.errorhandler(404)
+def handle_not_found(error):
+    """Ruta inexistente: página 404 propia que redirige sola al inicio a los pocos segundos (meta refresh), con un botón para ir de inmediato.
+
+    Sólo aplica a rutas que no matchean nada o a un abort(404) explícito — las
+    vistas que ya devuelven su propio (contenido, 404) a mano (ej. "No se
+    encontró ese dashboard" en las rutas de monitoreo) no pasan por acá.
+    """
+    return render_template("404.html"), 404
+
+
 # Monitoreo continuo (fases 1-7 del plan): persistencia en Postgres. No hay
 # fallback a SQLite — DATABASE_URL es obligatoria (ver AGENTS.md). Railway la
 # inyecta solo al agregar el addon de Postgres; en local hay que copiarla a .env.
@@ -252,6 +263,7 @@ def monitoring_register():
         "monitoring/registered.html",
         monitored=monitored,
         rua_mailbox=DMARC_REPORTS_MAILBOX,
+        just_registered=True,
         already_existed=not created,
         dns=dns,
         extra_dns=extra_dns,
@@ -284,7 +296,7 @@ def monitoring_dns(access_token):
         "monitoring/registered.html",
         monitored=monitored,
         rua_mailbox=DMARC_REPORTS_MAILBOX,
-        already_existed=True,
+        just_registered=False,
         dns=dns,
         extra_dns=extra_dns,
     )

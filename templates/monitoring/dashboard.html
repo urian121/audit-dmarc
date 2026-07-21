@@ -14,6 +14,15 @@
 </head>
 <body class="min-h-screen font-mono text-zinc-300 antialiased">
 
+{% macro verify_badge(label, passed, pass_text, fail_text) %}
+  <span class="relative inline-flex group">
+    <span class="text-[10px] px-1.5 py-0.5 rounded border cursor-help {{ 'border-emerald-500/30 text-emerald-400' if passed else 'border-rose-500/30 text-rose-400' }}">{{ label }}</span>
+    <span class="pointer-events-none invisible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-56 rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-2 text-[11px] leading-snug text-zinc-300 shadow-xl opacity-0 transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
+      {{ pass_text if passed else fail_text }}
+    </span>
+  </span>
+{% endmacro %}
+
   <div class="fixed inset-0 bg-grid pointer-events-none"></div>
 
   <div class="relative">
@@ -38,6 +47,7 @@
         </span>
       </div>
       <div class="flex items-center gap-2 shrink-0">
+        {% if reports %}
         <a
           href="{{ url_for('monitoring_dashboard_pdf', access_token=monitored.access_token) }}"
           onclick="event.preventDefault(); downloadPdfReport(this)"
@@ -50,6 +60,7 @@
           </svg>
           <span data-label>Descargar PDF</span>
         </a>
+        {% endif %}
         <a
           id="ver-dns-link"
           href="{{ url_for('monitoring_dns', access_token=monitored.access_token) }}"
@@ -181,8 +192,8 @@
                 <span class="text-zinc-600">({{ record.source_asn_org or 'sin identificar' }}{% if record.source_country %}, {{ record.source_country }}{% endif %}) &times;{{ record.count }}</span>
               </span>
               <span class="flex gap-1 shrink-0">
-                <span title="{{ 'Este envío pasó la alineación SPF — el dominio autenticado por SPF coincide con el From: del correo.' if record.spf_aligned else 'Este envío NO pasó la alineación SPF — el dominio autenticado por SPF no coincide con el From: del correo.' }}" class="text-[10px] px-1.5 py-0.5 rounded border cursor-help {{ 'border-emerald-500/30 text-emerald-400' if record.spf_aligned else 'border-rose-500/30 text-rose-400' }}">spf</span>
-                <span title="{{ 'Este envío pasó la alineación DKIM — la firma DKIM coincide con el dominio del From:.' if record.dkim_aligned else 'Este envío NO pasó la alineación DKIM — la firma DKIM no coincide con el dominio del From: (o no venía firmado).' }}" class="text-[10px] px-1.5 py-0.5 rounded border cursor-help {{ 'border-emerald-500/30 text-emerald-400' if record.dkim_aligned else 'border-rose-500/30 text-rose-400' }}">dkim</span>
+                {{ verify_badge('spf', record.spf_aligned, 'Este envío pasó la alineación SPF — el dominio autenticado por SPF coincide con el From: del correo.', 'Este envío NO pasó la alineación SPF — el dominio autenticado por SPF no coincide con el From: del correo.') }}
+                {{ verify_badge('dkim', record.dkim_aligned, 'Este envío pasó la alineación DKIM — la firma DKIM coincide con el dominio del From:.', 'Este envío NO pasó la alineación DKIM — la firma DKIM no coincide con el dominio del From: (o no venía firmado).') }}
               </span>
             </div>
           {% endfor %}

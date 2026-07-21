@@ -76,8 +76,12 @@
         </a>
         <h1 class="text-2xl text-zinc-100 tracking-tight">{{ monitored.domain }}</h1>
       </div>
-      <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-emerald-500/30 text-emerald-400 bg-emerald-500/10 shrink-0">
-        {% if already_existed %}Ya estaba registrado{% else %}registrado{% endif %}
+      <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 shrink-0 {{ 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' if just_registered or monitored.is_active else 'border-zinc-600 text-zinc-500 bg-zinc-500/10' }}">
+        {% if just_registered %}
+          {% if already_existed %}Ya estaba registrado{% else %}registrado{% endif %}
+        {% else %}
+          {{ 'ACTIVO' if monitored.is_active else 'INACTIVO' }}
+        {% endif %}
       </span>
     </div>
     <p class="text-[12px] text-zinc-500 mb-6 pl-11">Configuración DMARC sugerida para este dominio</p>
@@ -120,7 +124,10 @@
           <input type="hidden" name="ruf" value="{{ dns.ruf }}">
 
           <div>
-            <span class="block mb-1.5 text-[11px] text-zinc-500">Política de aplicación (p)</span>
+            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#ef5184]">1.</span> Política de aplicación (p)</span>
+            <p class="text-[10.5px] text-zinc-600 leading-snug mb-2 max-w-md">
+              Qué hacer con el correo de este dominio que no pasa SPF/DKIM: "Ninguno" sólo monitorea, "Cuarentena" lo manda a spam, "Rechazar" lo bloquea directamente.
+            </p>
             <div class="flex flex-wrap gap-2">
               {% for value, label in [('none', 'Ninguno'), ('quarantine', 'Cuarentena'), ('reject', 'Rechazar')] %}
               <label class="cursor-pointer">
@@ -132,7 +139,10 @@
           </div>
 
           <div>
-            <span class="block mb-1.5 text-[11px] text-zinc-500">Política de subdominios (sp)</span>
+            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#ef5184]">2.</span> Política de subdominios (sp)</span>
+            <p class="text-[10.5px] text-zinc-600 leading-snug mb-2 max-w-md">
+              Qué hacer con el correo que llega desde un subdominio (ej. <code class="text-zinc-500">mail.{{ monitored.domain }}</code>) sin su propio registro DMARC — igual que "p", pero sólo para subdominios.
+            </p>
             <div class="flex flex-wrap gap-2">
               {% for value, label in [('', 'Igual que p'), ('none', 'Ninguno'), ('quarantine', 'Cuarentena'), ('reject', 'Rechazar')] %}
               <label class="cursor-pointer">
@@ -145,9 +155,12 @@
 
           <div>
             <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[11px] text-zinc-500">Porcentaje aplicado (pct)</span>
+              <span class="text-[11px] text-zinc-500"><span class="text-[#ef5184]">3.</span> Porcentaje aplicado (pct)</span>
               <span id="pct-label" class="text-[11px] text-zinc-300">{{ dns.policy.pct }}%</span>
             </div>
+            <p class="text-[10.5px] text-zinc-600 leading-snug mb-2 max-w-md">
+              A qué porcentaje del correo se le aplica la política de arriba (cuarentena/rechazo) — el resto sólo se monitorea. Útil para subir la aplicación gradual, no de golpe.
+            </p>
             <input
               type="range" name="pct" min="0" max="100" step="5" value="{{ dns.policy.pct }}"
               hx-on:input="document.getElementById('pct-label').textContent = this.value + '%'"
