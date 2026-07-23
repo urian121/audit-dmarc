@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+{% block title %}Akila - Documentación DMARC{% endblock %}
+{% block content %}
+    <div class="max-w-4xl mx-auto px-6 py-16">
+      <h1 class="text-2xl text-zinc-900 tracking-tight mb-1">Documentación DMARC</h1>
+      <p class="text-sm text-zinc-500 leading-relaxed mb-10 max-w-2xl">
+        Una guía rápida de qué es todo esto y para qué sirve — sin tecnicismos de más, pensada para
+        cualquiera que use esta app, no sólo para gente de IT.
+      </p>
+
+      <div class="bg-white rounded-md p-5 mb-6">
+        <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase mb-2">¿Qué es DMARC?</h2>
+        <p class="text-[13px] text-zinc-600 leading-relaxed">
+          Es una regla que publicas en el DNS de tu dominio y que le dice a Gmail, Outlook y demás
+          proveedores de correo: "así se ve un correo legítimo mío — si te llega uno que no cumple esto,
+          esto es lo que quiero que hagas con él". Combina otras dos verificaciones (SPF y DKIM) y agrega
+          reportes: te avisa quién está enviando correo usando tu dominio, sea gente autorizada o no.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div class="bg-white rounded-md p-5">
+          <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase mb-2">¿Qué beneficios trae?</h2>
+          <ul class="text-[13px] text-zinc-600 leading-relaxed list-disc list-inside space-y-1">
+            <li>Evita que alguien mande correo haciéndose pasar por tu dominio.</li>
+            <li>Te muestra en un reporte quién envía correo en tu nombre — herramientas que ya usas y cosas que no reconoces.</li>
+            <li>Mejora la entregabilidad: los proveedores confían más en un dominio con DMARC bien configurado.</li>
+            <li>Puedes subir la exigencia poco a poco (monitorear → cuarentena → rechazar), sin arriesgar tu correo real de un día para otro.</li>
+          </ul>
+        </div>
+        <div class="bg-white rounded-md p-5">
+          <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase mb-2">¿De qué te protege?</h2>
+          <ul class="text-[13px] text-zinc-600 leading-relaxed list-disc list-inside space-y-1">
+            <li><strong class="text-zinc-800">Phishing/suplantación</strong>: correos falsos que parecen venir de tu empresa (a clientes, proveedores, tu propio equipo).</li>
+            <li><strong class="text-zinc-800">Fraude por correo</strong>: facturas o pedidos de pago falsificados usando tu dominio.</li>
+            <li><strong class="text-zinc-800">Daño a tu reputación</strong>: si otros envían spam "como si fueras tú", tu dominio puede terminar marcado como sospechoso.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase mb-3">Glosario</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">DNS</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">La "libreta de direcciones" de internet: traduce nombres de dominio a la información real del servidor. SPF, DKIM, DMARC, etc. se publican ahí, como registros de tipo TXT.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">Proveedor de DNS</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Quién administra esos registros por ti (Cloudflare, GoDaddy, Route 53, etc.) — ahí es donde entras a publicar o editar los valores que te sugiere esta app.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">SPF</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Declara qué servidores tienen permiso de enviar correo en nombre de tu dominio. Si un correo viene de un servidor que no está en la lista, no pasa SPF.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">DKIM</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Firma digital que se agrega a cada correo saliente, para comprobar que nadie lo alteró en el camino y que de verdad salió de tu proveedor de correo.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">adkim / aspf</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Qué tan exacto debe coincidir el dominio de DKIM/SPF con el que ves en el "De:" del correo. <strong class="text-zinc-700">Relajada (r)</strong>: alcanza con que sea el mismo dominio raíz. <strong class="text-zinc-700">Estricta (s)</strong>: tiene que ser exactamente igual.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">DMARC</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Usa los resultados de SPF y DKIM para decidir qué hacer con un correo que no los pasa, y para pedir reportes de todo lo que se envía en nombre de tu dominio.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">p=none (Ninguno)</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Sólo monitorea — no bloquea ni pone en cuarentena nada. El punto de partida seguro para empezar a recibir reportes sin arriesgar correo real.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">p=quarantine (Cuarentena)</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Los correos que fallan la validación se mandan a spam en vez de a la bandeja de entrada del destinatario.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">p=reject (Rechazar)</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">La política más estricta: los correos que fallan la validación se bloquean por completo, ni siquiera llegan a spam.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">pct</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">A qué porcentaje del correo se le aplica la política (cuarentena/rechazo) — el resto sólo se monitorea. Sirve para subir la exigencia de a poco, en vez de todo de golpe.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">rua</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">La casilla de correo que recibe los reportes agregados: un resumen (normalmente diario) de quién envió correo en tu nombre y si pasó la validación.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">ruf</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">La casilla que recibe reportes forenses: el detalle de un correo puntual que falló la validación (no todos los proveedores los mandan).</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">DNSSEC</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Firma criptográficamente las respuestas de DNS de tu dominio, para que nadie pueda falsificarlas en el camino. Se activa desde tu proveedor de DNS, no es un registro que se publique a mano.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">MX</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">El registro que indica qué servidores reciben el correo de tu dominio — a dónde llega el correo que te mandan, no el que tú envías.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">TLS-RPT</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Te avisa cuando falla el cifrado (TLS) al intentar entregarte correo — nunca bloquea nada, sólo reporta problemas de conexión segura.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">MTA-STS</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Obliga a que el correo que te envían siempre viaje cifrado — si no se puede cifrar la conexión, ese correo no se entrega, en vez de mandarse sin protección.</p>
+        </div>
+
+        <div class="bg-white rounded-md p-4">
+          <h3 class="text-[13px] font-semibold text-zinc-800 mb-1">BIMI</h3>
+          <p class="text-[12px] text-zinc-500 leading-relaxed">Muestra el logo de tu marca junto a tus correos en la bandeja de entrada del destinatario. Requiere tener DMARC en cuarentena o rechazo — con "sólo monitoreo" no funciona.</p>
+        </div>
+
+      </div>
+    </div>
+{% endblock %}

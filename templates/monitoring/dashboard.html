@@ -15,7 +15,7 @@
       <div class="flex items-center gap-3">
         <a
           href="{{ url_for('monitoring_list') }}"
-          class="inline-flex items-center justify-center w-8 h-8 rounded-md shadow-sm bg-white text-zinc-500 hover:text-[#474545] transition-colors shrink-0"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-white text-zinc-500 hover:text-[#2d2147] transition-colors shrink-0"
           title="Volver a la lista de monitores"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
@@ -33,7 +33,7 @@
         <a
           href="{{ url_for('monitoring_dashboard_pdf', access_token=monitored.access_token) }}"
           onclick="event.preventDefault(); downloadPdfReport(this)"
-          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase shadow-sm bg-white rounded-md px-3 py-1.5 hover:text-[#474545] transition-colors"
+          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase bg-white rounded-md px-3 py-1.5 hover:text-[#2d2147] transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -46,8 +46,8 @@
         <a
           id="ver-dns-link"
           href="{{ url_for('monitoring_dns', access_token=monitored.access_token) }}"
-          onclick="this.querySelector('[data-label]').textContent = 'Cargando DNS…'; this.classList.remove('text-zinc-600'); this.classList.add('text-[#474545]','pointer-events-none');"
-          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase shadow-sm bg-white rounded-md px-3 py-1.5 hover:text-[#474545] transition-colors"
+          onclick="this.querySelector('[data-label]').textContent = 'Cargando DNS…'; this.classList.remove('text-zinc-600'); this.classList.add('text-[#2d2147]','pointer-events-none');"
+          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase bg-white rounded-md px-3 py-1.5 hover:text-[#2d2147] transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
             <polyline points="16 18 22 12 16 6"></polyline>
@@ -59,7 +59,7 @@
           <input type="hidden" name="activar" value="{{ '0' if monitored.is_active else '1' }}">
           <button
             type="submit"
-            class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase shadow-sm bg-white rounded-md px-3 py-1.5 hover:text-[#474545] transition-colors"
+            class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase bg-white rounded-md px-3 py-1.5 hover:text-[#2d2147] transition-colors"
           >
             {% if monitored.is_active %}
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
@@ -82,7 +82,7 @@
     </p>
 
     {% if not monitored.is_active %}
-    <div class="bg-white shadow-sm rounded-md p-4 mb-8">
+    <div class="bg-white rounded-md p-4 mb-8">
       <p class="text-[12px] text-zinc-500 leading-relaxed">
         El monitoreo de este dominio está desactivado: no se revisan cambios de DNS ni se procesan reportes nuevos.
         El historial de abajo se conserva. Reactívalo cuando quieras con el botón de arriba.
@@ -91,7 +91,7 @@
     {% endif %}
 
     {% if not reports %}
-    <div class="bg-white shadow-sm rounded-md p-4 mb-8">
+    <div class="bg-white rounded-md p-4 mb-8">
       <p class="text-[12px] text-zinc-500 leading-relaxed">
         Todavía no llegó ningún reporte DMARC para este dominio. Confirma que agregaste
         <code class="text-zinc-700">rua=mailto:{{ rua_mailbox }}</code> a tu registro DMARC —
@@ -115,7 +115,7 @@
     {% endif %}
     <div class="grid grid-cols-1 gap-3 mb-10">
       {% for alert in other_alerts %}
-        <div class="rise bg-white shadow-sm rounded-md p-4">
+        <div class="rise bg-white rounded-md p-4">
           <div class="flex items-center justify-between mb-1">
             <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-200 text-amber-700 bg-amber-50">
               {{ alert.kind_label }}
@@ -127,7 +127,7 @@
       {% endfor %}
 
       {% for group in alert_groups %}
-        <details class="rise bg-white shadow-sm rounded-md p-4">
+        <details class="rise bg-white rounded-md p-4">
           <summary class="flex items-center justify-between gap-3 cursor-pointer">
             <span class="flex items-center gap-2 min-w-0">
               <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-rose-200 text-rose-700 bg-rose-50 shrink-0">Remitente desconocido</span>
@@ -162,7 +162,7 @@
     </p>
     <div class="grid grid-cols-1 gap-3">
       {% for report in reports %}
-        <div class="rise bg-white shadow-sm rounded-md p-4">
+        <div class="rise bg-white rounded-md p-4">
           <div class="flex items-center justify-between mb-3">
             <span class="text-[12px] text-zinc-800">{{ report.org_name or 'origen desconocido' }}</span>
             <span class="text-[10px] text-zinc-400">recibido {{ report.received_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
@@ -196,7 +196,7 @@
       if (!link) return;
       var label = link.querySelector("[data-label]");
       if (label) label.textContent = "Ver DNS";
-      link.classList.remove("text-[#474545]", "pointer-events-none");
+      link.classList.remove("text-[#2d2147]", "pointer-events-none");
       link.classList.add("text-zinc-600");
     });
   </script>

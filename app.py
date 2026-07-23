@@ -127,6 +127,13 @@ def inicio():
     return render_template("index.html", **context)
 
 
+@app.route("/documentacion", methods=["GET"])
+@login_required
+def documentacion():
+    """Página de referencia: qué es DMARC/SPF/DKIM y demás conceptos, en lenguaje simple."""
+    return render_template("documentation.html")
+
+
 @app.route("/check", methods=["POST"])
 @login_required
 def check_partial():

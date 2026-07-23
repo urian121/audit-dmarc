@@ -1,12 +1,20 @@
 ::selection { background: #ff578f; }
 body { background-color: #fff1ee; }
-.pace .pace-progress { background: #ef5184; }
-/* Tema claro (layout.html): botones/acentos interactivos usan #474545 en vez
-   del rosa de marca — auth/login.html y auth/register.html siguen con el
-   tema oscuro original (rosa incluido), por eso estas reglas van escopeadas
-   a `.font-jakarta` (la clase del <body> del tema claro) en vez de
-   reemplazar la regla de arriba, que ellas siguen necesitando. */
-.font-jakarta .pace-progress { background: #474545; }
+.pace .pace-progress { background: #2d2147; }
+/* Patrón de cuadritos del panel izquierdo de login/register, sobre fondo
+   #2d2147 — líneas claras suaves. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 42px 42px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 55%, transparent 100%);
+          mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 55%, transparent 100%);
+}
+/* Resplandor decorativo detrás de la grilla del panel izquierdo de login/register. */
+.auth-glow {
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(45, 33, 71, 0.18), transparent 70%);
+}
 /* !important + selector universal: Tailwind CDN inyecta su propio <style> con
    font-family en html/button/input/select/textarea (su preflight) — como se
    carga después de este archivo, esas reglas pueden ganar por orden y dejar
@@ -51,13 +59,11 @@ body { background-color: #fff1ee; }
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  background: #ef5184;
+  background: #2d2147;
   animation: radar-wave 2.4s ease-out infinite;
 }
 .radar-wave:nth-child(2) { animation-delay: .8s; }
 .radar-wave:nth-child(3) { animation-delay: 1.6s; }
-/* Tema claro: ver comentario junto a .pace-progress más arriba — mismo motivo. */
-.font-jakarta .radar-wave { background: #474545; }
 pre.record { scrollbar-width: thin; scrollbar-color: #3f3f46 transparent; }
 pre.record::-webkit-scrollbar { height: 6px; }
 pre.record::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 999px; }
@@ -93,8 +99,8 @@ input:-webkit-autofill:focus {
 .verify-btn.htmx-request [data-label] { display: none; }
 .verify-btn.htmx-request [data-loading-label] { display: inline; }
 .verify-btn.htmx-request {
-  border-color: rgba(71, 69, 69, 0.6) !important;
-  color: #474545 !important;
+  border-color: rgba(45, 33, 71, 0.6) !important;
+  color: #2d2147 !important;
 }
 
 /* Mientras corre una nueva búsqueda, el resultado ANTERIOR (todavía en
@@ -115,7 +121,7 @@ input:-webkit-autofill:focus {
   width: 56px;
   height: 56px;
   border-radius: 9999px;
-  background: conic-gradient(from 0deg, #474545 0deg, rgba(71, 69, 69, 0.08) 300deg, #474545 360deg);
+  background: conic-gradient(from 0deg, #2d2147 0deg, rgba(45, 33, 71, 0.08) 300deg, #2d2147 360deg);
   transition: opacity 150ms ease-in;
 }
 .scan-ring::after {
@@ -133,7 +139,7 @@ input:-webkit-autofill:focus {
   transition: opacity 150ms ease-in;
 }
 .scan-log li + li { margin-top: .3rem; }
-.scan-log li::before { content: '▸ '; color: #474545; }
+.scan-log li::before { content: '▸ '; color: #2d2147; }
 .htmx-request .scan-log li {
   animation: scan-pulse 1.8s ease-in-out infinite;
   animation-delay: var(--d, 0s);

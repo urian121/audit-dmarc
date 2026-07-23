@@ -7,7 +7,7 @@
   title="Copiar"
   data-copy-target="{{ target_id }}"
   hx-on:click="navigator.clipboard.writeText(document.getElementById(this.dataset.copyTarget).textContent.trim()); this.dataset.copied = '1'; setTimeout(() => { this.dataset.copied = ''; }, 1500)"
-  class="group inline-flex items-center justify-center w-7 h-7 rounded-md shadow-sm bg-white text-zinc-400 hover:text-[#474545] transition-colors shrink-0"
+  class="group inline-flex items-center justify-center w-7 h-7 rounded-md bg-white text-zinc-400 hover:text-[#2d2147] transition-colors shrink-0"
 >
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 group-data-[copied=1]:hidden">
     <rect x="9" y="9" width="13" height="13" rx="2"></rect>
@@ -25,7 +25,7 @@
   title="Copiar"
   data-copy-target="{{ target_id }}"
   hx-on:click="navigator.clipboard.writeText(document.getElementById(this.dataset.copyTarget).textContent.trim()); this.dataset.copied = '1'; setTimeout(() => { this.dataset.copied = ''; }, 1500)"
-  class="group inline-flex items-center gap-1.5 text-[10px] text-zinc-500 tracking-wide uppercase hover:text-[#474545] transition-colors"
+  class="group inline-flex items-center gap-1.5 text-[10px] text-zinc-500 tracking-wide uppercase hover:text-[#2d2147] transition-colors"
 >
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0 group-data-[copied=1]:hidden">
     <rect x="9" y="9" width="13" height="13" rx="2"></rect>
@@ -44,7 +44,7 @@
       <div class="flex items-center gap-3">
         <a
           href="{{ url_for('monitoring_dashboard', access_token=monitored.access_token) }}"
-          class="inline-flex items-center justify-center w-8 h-8 rounded-md shadow-sm bg-white text-zinc-500 hover:text-[#474545] transition-colors shrink-0"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-white text-zinc-500 hover:text-[#2d2147] transition-colors shrink-0"
           title="Volver al dashboard"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
@@ -64,7 +64,7 @@
     </div>
     <p class="text-[12px] text-zinc-500 mb-6 pl-11">Configuración DMARC sugerida para este dominio</p>
 
-    <div class="bg-white shadow-sm rounded-md p-4 mb-6">
+    <div class="bg-white rounded-md p-4 mb-6">
       <div class="flex items-center justify-between mb-1">
         <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase">DMARC</h2>
         <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-200 text-amber-700 bg-amber-50 shrink-0">REQUERIDO</span>
@@ -102,7 +102,7 @@
           <input type="hidden" name="ruf" value="{{ dns.ruf }}">
 
           <div>
-            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#474545]">1.</span> Política de aplicación (p)</span>
+            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#2d2147]">1.</span> Política de aplicación (p)</span>
             <p class="text-[10.5px] text-zinc-400 leading-snug mb-2 max-w-md">
               Qué hacer con el correo de este dominio que no pasa SPF/DKIM: "Ninguno" sólo monitorea, "Cuarentena" lo manda a spam, "Rechazar" lo bloquea directamente.
             </p>
@@ -110,14 +110,14 @@
               {% for value, label in [('none', 'Ninguno'), ('quarantine', 'Cuarentena'), ('reject', 'Rechazar')] %}
               <label class="cursor-pointer">
                 <input type="radio" name="p" value="{{ value }}" class="peer sr-only" {% if dns.policy.p == value %}checked{% endif %}>
-                <span class="inline-block text-[11px] uppercase tracking-wide bg-zinc-50 rounded px-3 py-1.5 text-zinc-500 peer-checked:border peer-checked:border-[#474545]/60 peer-checked:text-[#474545] transition-colors">{{ label }}</span>
+                <span class="inline-block text-[11px] uppercase tracking-wide bg-zinc-50 rounded px-3 py-1.5 text-zinc-500 peer-checked:border peer-checked:border-[#2d2147]/60 peer-checked:text-[#2d2147] transition-colors">{{ label }}</span>
               </label>
               {% endfor %}
             </div>
           </div>
 
           <div>
-            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#474545]">2.</span> Política de subdominios (sp)</span>
+            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#2d2147]">2.</span> Política de subdominios (sp)</span>
             <p class="text-[10.5px] text-zinc-400 leading-snug mb-2 max-w-md">
               Qué hacer con el correo que llega desde un subdominio (ej. <code class="text-zinc-500">mail.{{ monitored.domain }}</code>) sin su propio registro DMARC — igual que "p", pero sólo para subdominios.
             </p>
@@ -125,7 +125,7 @@
               {% for value, label in [('', 'Igual que p'), ('none', 'Ninguno'), ('quarantine', 'Cuarentena'), ('reject', 'Rechazar')] %}
               <label class="cursor-pointer">
                 <input type="radio" name="sp" value="{{ value }}" class="peer sr-only" {% if dns.policy.sp == value %}checked{% endif %}>
-                <span class="inline-block text-[11px] uppercase tracking-wide bg-zinc-50 rounded px-3 py-1.5 text-zinc-500 peer-checked:border peer-checked:border-[#474545]/60 peer-checked:text-[#474545] transition-colors">{{ label }}</span>
+                <span class="inline-block text-[11px] uppercase tracking-wide bg-zinc-50 rounded px-3 py-1.5 text-zinc-500 peer-checked:border peer-checked:border-[#2d2147]/60 peer-checked:text-[#2d2147] transition-colors">{{ label }}</span>
               </label>
               {% endfor %}
             </div>
@@ -133,7 +133,7 @@
 
           <div>
             <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[11px] text-zinc-500"><span class="text-[#474545]">3.</span> Porcentaje aplicado (pct)</span>
+              <span class="text-[11px] text-zinc-500"><span class="text-[#2d2147]">3.</span> Porcentaje aplicado (pct)</span>
               <span id="pct-label" class="text-[11px] text-zinc-700">{{ dns.policy.pct }}%</span>
             </div>
             <p class="text-[10.5px] text-zinc-400 leading-snug mb-2 max-w-md">
@@ -142,17 +142,17 @@
             <input
               type="range" name="pct" min="0" max="100" step="5" value="{{ dns.policy.pct }}"
               hx-on:input="document.getElementById('pct-label').textContent = this.value + '%'"
-              class="w-full accent-[#474545]"
+              class="w-full accent-[#2d2147]"
             >
           </div>
 
           <div class="flex flex-wrap gap-4">
             <label class="inline-flex items-center gap-2 text-[11px] text-zinc-500 cursor-pointer">
-              <input type="checkbox" name="adkim" value="s" {% if dns.policy.adkim == 's' %}checked{% endif %} class="accent-[#474545]">
+              <input type="checkbox" name="adkim" value="s" {% if dns.policy.adkim == 's' %}checked{% endif %} class="accent-[#2d2147]">
               Alineación DKIM estricta <code class="text-zinc-400">(adkim=s)</code>
             </label>
             <label class="inline-flex items-center gap-2 text-[11px] text-zinc-500 cursor-pointer">
-              <input type="checkbox" name="aspf" value="s" {% if dns.policy.aspf == 's' %}checked{% endif %} class="accent-[#474545]">
+              <input type="checkbox" name="aspf" value="s" {% if dns.policy.aspf == 's' %}checked{% endif %} class="accent-[#2d2147]">
               Alineación SPF estricta <code class="text-zinc-400">(aspf=s)</code>
             </label>
           </div>
@@ -175,7 +175,7 @@
       {% include "partials/dns_verify_status.html" %}
     </div>
 
-    <div class="bg-white shadow-sm rounded-md p-4 mb-6">
+    <div class="bg-white rounded-md p-4 mb-6">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase">TLS-RPT</h2>
         <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-200 text-amber-700 bg-amber-50 shrink-0">RECOMENDADO</span>
@@ -203,7 +203,7 @@
       {% include "partials/tls_rpt_verify_status.html" %}
     </div>
 
-    <div class="bg-white shadow-sm rounded-md p-4 mb-6">
+    <div class="bg-white rounded-md p-4 mb-6">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase">SPF</h2>
         {% if extra_dns.spf.record %}
@@ -252,7 +252,7 @@
       {% endif %}
     </div>
 
-    <div class="bg-white shadow-sm rounded-md p-4 mb-6">
+    <div class="bg-white rounded-md p-4 mb-6">
       <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase mb-3">Otros protocolos</h2>
 
       <div class="mb-4 pb-4 border-b border-zinc-100">
@@ -304,7 +304,7 @@
 
     <a
       href="{{ url_for('monitoring_dashboard', access_token=monitored.access_token) }}"
-      class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-[#474545] hover:bg-[#474545]/90 text-white text-sm font-semibold tracking-wide transition-colors"
+      class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-[#2d2147] hover:bg-[#2d2147]/90 text-white text-sm font-semibold tracking-wide transition-colors"
     >
       Ir al monitoreo
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0">

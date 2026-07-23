@@ -40,7 +40,6 @@ MUTED = colors.HexColor("#52525b")
 FAINT = colors.HexColor("#a1a1aa")
 BORDER = colors.HexColor("#e4e4e7")
 CARD_BG = colors.HexColor("#fafafa")
-BRAND = colors.HexColor("#be185d")
 BRAND_BG = colors.HexColor("#fdf2f6")
 BRAND_BORDER = colors.HexColor("#f9c3d3")
 

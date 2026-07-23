@@ -1,5 +1,5 @@
 {% macro render_card(card) %}
-<div class="rise bg-white shadow-sm rounded-md p-4 break-inside-avoid">
+<div class="rise bg-white rounded-md p-4 break-inside-avoid">
   <div class="mb-3">
     <div class="flex items-center justify-between">
       <h3 class="text-xs tracking-[0.15em] text-zinc-500 uppercase">{{ card.title }}</h3>
@@ -158,7 +158,7 @@
   <a
     href="{{ url_for('descargar_pdf', domain=result_domain) }}"
     hx-on:click="event.preventDefault(); downloadPdfReport(this)"
-    class="inline-flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase shadow-sm bg-white rounded-md px-3 py-1.5 text-zinc-600 hover:text-[#474545] transition-colors"
+    class="inline-flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase bg-white rounded-md px-3 py-1.5 text-zinc-600 hover:text-[#2d2147] transition-colors"
   >
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -170,16 +170,16 @@
 </div>
 
 {% if ai_summary %}
-<div class="rise mb-4 bg-[#474545]/[0.06] rounded-md p-4 break-inside-avoid">
+<div class="rise mb-4 bg-[#2d2147]/[0.06] rounded-md p-4 break-inside-avoid">
   <div class="flex items-center gap-2 mb-2">
-    <span class="w-1.5 h-1.5 rounded-full bg-[#474545]"></span>
-    <h3 class="text-sm tracking-[0.2em] text-[#474545] uppercase font-semibold">Resumen</h3>
+    <span class="w-1.5 h-1.5 rounded-full bg-[#2d2147]"></span>
+    <h3 class="text-sm tracking-[0.2em] text-[#2d2147] uppercase font-semibold">Resumen</h3>
   </div>
   <p class="text-[12px] text-zinc-700 leading-relaxed whitespace-pre-line">{{ ai_summary }}</p>
 </div>
 {% endif %}
 
-<div class="rise shadow-sm rounded-md px-4 py-3 bg-white mb-4 break-inside-avoid">
+<div class="rise rounded-md px-4 py-3 bg-white mb-4 break-inside-avoid">
   <div class="flex flex-wrap items-center gap-4 text-xs mb-3">
     <span class="text-zinc-800">{{ result_domain }}</span>
     <span class="text-zinc-300">/</span>
@@ -203,7 +203,7 @@
   <h2 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase mb-2">Riesgos y qué hacer</h2>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-1 gap-3">
     {% for risk in risks %}
-      <div class="bg-white shadow-sm rounded-md p-3.5 break-inside-avoid">
+      <div class="bg-white rounded-md p-3.5 break-inside-avoid">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-xs tracking-[0.1em] text-zinc-700 uppercase">{{ risk.title }}</h3>
           <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 shrink-0 {{ risk.severity_cls }}">{{ risk.severity }}</span>
