@@ -1,19 +1,15 @@
-::selection { background: #ff578f; }
-body { background-color: #fff1ee; }
+::selection { background: #2d2147; color: #fff; }
+body { background-color: #fcfaef; }
 .pace .pace-progress { background: #2d2147; }
 /* Patrón de cuadritos del panel izquierdo de login/register, sobre fondo
-   #2d2147 — líneas claras suaves. */
+   #fcfaef — líneas oscuras suaves. */
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,0.06) 1px, transparent 1px);
   background-size: 42px 42px;
   -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 55%, transparent 100%);
           mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 55%, transparent 100%);
-}
-/* Resplandor decorativo detrás de la grilla del panel izquierdo de login/register. */
-.auth-glow {
-  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(45, 33, 71, 0.18), transparent 70%);
 }
 /* !important + selector universal: Tailwind CDN inyecta su propio <style> con
    font-family en html/button/input/select/textarea (su preflight) — como se
