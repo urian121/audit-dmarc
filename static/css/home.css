@@ -1,14 +1,37 @@
 ::selection { background: #ff578f; }
-body { background-color: #09090b; }
+body { background-color: #fff1ee; }
 .pace .pace-progress { background: #ef5184; }
-.bg-grid {
-  background-image:
-    linear-gradient(to right, rgba(255,255,255,0.09) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.09) 1px, transparent 1px);
-  background-size: 42px 42px;
-  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 55%, transparent 100%);
-          mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 55%, transparent 100%);
+/* Tema claro (layout.html): botones/acentos interactivos usan #474545 en vez
+   del rosa de marca — auth/login.html y auth/register.html siguen con el
+   tema oscuro original (rosa incluido), por eso estas reglas van escopeadas
+   a `.font-jakarta` (la clase del <body> del tema claro) en vez de
+   reemplazar la regla de arriba, que ellas siguen necesitando. */
+.font-jakarta .pace-progress { background: #474545; }
+/* !important + selector universal: Tailwind CDN inyecta su propio <style> con
+   font-family en html/button/input/select/textarea (su preflight) — como se
+   carga después de este archivo, esas reglas pueden ganar por orden y dejar
+   botones/inputs/títulos en la fuente por defecto del navegador en vez de
+   heredar la del body. Forzando la fuente en TODOS los descendientes del
+   body no depende de qué cascada gane. */
+.font-jakarta,
+.font-jakarta * {
+  font-family: "Plus Jakarta Sans", sans-serif !important;
 }
+
+/* El texto por defecto de toda la app (10-13px arbitrarios + text-xs/sm) se
+   sentía muy chico — se sube 2px cada tamaño. Selector por atributo (no
+   `.text-\[11px\]` con corchetes escapados) para no depender de si esta
+   regla carga antes o después del <style> que inyecta el script de Tailwind
+   CDN — !important por la misma razón. Cubre sólo tamaños chicos/"default";
+   los títulos (text-lg/2xl/3xl) no estaban en la queja, se dejan igual. */
+[class*="text-[9px]"]    { font-size: 11px !important; }
+[class*="text-[10px]"]   { font-size: 12px !important; }
+[class*="text-[10.5px]"] { font-size: 12.5px !important; }
+[class*="text-[11px]"]   { font-size: 13px !important; }
+[class*="text-[12px]"]   { font-size: 14px !important; }
+[class*="text-[13px]"]   { font-size: 15px !important; }
+.text-xs { font-size: 14px !important; line-height: 20px !important; }
+.text-sm { font-size: 16px !important; line-height: 24px !important; }
 @keyframes blink { 50% { opacity: 0; } }
 .cursor { animation: blink 1s step-start infinite; }
 @keyframes rise {
@@ -33,18 +56,22 @@ body { background-color: #09090b; }
 }
 .radar-wave:nth-child(2) { animation-delay: .8s; }
 .radar-wave:nth-child(3) { animation-delay: 1.6s; }
+/* Tema claro: ver comentario junto a .pace-progress más arriba — mismo motivo. */
+.font-jakarta .radar-wave { background: #474545; }
 pre.record { scrollbar-width: thin; scrollbar-color: #3f3f46 transparent; }
 pre.record::-webkit-scrollbar { height: 6px; }
 pre.record::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 999px; }
 
 /* Chrome/Edge pintan de blanco los inputs autocompletados (usuario/email),
-   sin importar autocomplete="off" — se fuerza el fondo oscuro con este truco. */
+   sin importar autocomplete="off" — se fuerza que coincida con el fondo real
+   del input (blanco) en vez del blanco puro por defecto del navegador, que
+   se notaba como un parche encima del borde. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #18181b inset;
-  -webkit-text-fill-color: #f4f4f5;
-  caret-color: #f4f4f5;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  -webkit-text-fill-color: #18181b;
+  caret-color: #18181b;
   transition: background-color 9999s ease-in-out 0s;
 }
 
@@ -66,8 +93,8 @@ input:-webkit-autofill:focus {
 .verify-btn.htmx-request [data-label] { display: none; }
 .verify-btn.htmx-request [data-loading-label] { display: inline; }
 .verify-btn.htmx-request {
-  border-color: rgba(239, 81, 132, 0.6) !important;
-  color: #ef5184 !important;
+  border-color: rgba(71, 69, 69, 0.6) !important;
+  color: #474545 !important;
 }
 
 /* Mientras corre una nueva búsqueda, el resultado ANTERIOR (todavía en
@@ -88,7 +115,7 @@ input:-webkit-autofill:focus {
   width: 56px;
   height: 56px;
   border-radius: 9999px;
-  background: conic-gradient(from 0deg, #ef5184 0deg, rgba(239, 81, 132, 0.08) 300deg, #ef5184 360deg);
+  background: conic-gradient(from 0deg, #474545 0deg, rgba(71, 69, 69, 0.08) 300deg, #474545 360deg);
   transition: opacity 150ms ease-in;
 }
 .scan-ring::after {
@@ -96,7 +123,7 @@ input:-webkit-autofill:focus {
   position: absolute;
   inset: 6px;
   border-radius: 9999px;
-  background: #09090b;
+  background: #ffffff;
 }
 .htmx-request .scan-ring { animation: scan-spin 1.1s linear infinite; }
 
@@ -106,7 +133,7 @@ input:-webkit-autofill:focus {
   transition: opacity 150ms ease-in;
 }
 .scan-log li + li { margin-top: .3rem; }
-.scan-log li::before { content: '▸ '; color: #ef5184; }
+.scan-log li::before { content: '▸ '; color: #474545; }
 .htmx-request .scan-log li {
   animation: scan-pulse 1.8s ease-in-out infinite;
   animation-delay: var(--d, 0s);
@@ -119,26 +146,4 @@ input:-webkit-autofill:focus {
 @keyframes scan-pulse {
   0%, 100% { opacity: .25; }
   50% { opacity: 1; }
-}
-
-/* Reporte impreso/PDF: la paleta de texto está pensada para fondo oscuro
-   (zinc-300/400/500 sobre zinc-900), casi ilegible sobre papel blanco.
-   Se reescribe sólo dentro de #results-wrapper y sólo en @media print,
-   sin afectar la vista normal en pantalla. */
-@media print {
-  #results-wrapper * {
-    color: #18181b !important;
-  }
-  #results-wrapper [class*="bg-zinc-9"],
-  #results-wrapper [class*="bg-zinc-8"] {
-    background-color: #f4f4f5 !important;
-  }
-  #results-wrapper [class*="border-zinc"] {
-    border-width: 1px !important;
-    border-color: #e4e4e7 !important;
-  }
-  #results-wrapper [class*="text-emerald"] { color: #047857 !important; }
-  #results-wrapper [class*="text-amber"] { color: #b45309 !important; }
-  #results-wrapper [class*="text-rose"] { color: #be123c !important; }
-  #results-wrapper [class*="text-[#ef5184]"] { color: #be185d !important; }
 }

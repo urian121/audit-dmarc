@@ -1,29 +1,12 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Akila - Monitores</title>
-<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace-theme-default.css">
-<script>window.paceOptions = { minTime: 100, ghostTime: 50, catchupTime: 100, initialRate: 0.3 };</script>
-<script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
-</head>
-<body class="min-h-screen font-mono text-zinc-300 antialiased">
-
-  <div class="fixed inset-0 bg-grid pointer-events-none"></div>
-
-  <div class="relative">
-    {% include "partials/header.html" %}
-
+{% extends "layout.html" %}
+{% block title %}Akila - Monitores{% endblock %}
+{% block content %}
     <div class="max-w-4xl mx-auto px-6 py-16">
       <div class="flex items-start justify-between gap-4 mb-3">
-        <h1 class="text-2xl text-zinc-100 tracking-tight">Monitores registrados</h1>
+        <h1 class="text-2xl text-zinc-900 tracking-tight">Monitores registrados</h1>
         <a
           href="{{ url_for('monitoring_register') }}"
-          class="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 text-zinc-950 text-xs font-semibold tracking-wide transition-colors"
+          class="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-[#474545] hover:bg-[#474545]/90 text-white text-xs font-semibold tracking-wide transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -40,25 +23,22 @@
         {% for m in monitored_domains %}
           <a
             href="{{ url_for('monitoring_dashboard', access_token=m.access_token) }}"
-            class="rise flex items-center justify-between gap-3 bg-zinc-900/50 border border-zinc-800 rounded-md p-4 hover:border-[#ef5184]/60 transition-colors"
+            class="rise flex items-center justify-between gap-3 bg-white shadow-sm rounded-md p-4 border border-transparent hover:border-[#474545] transition-colors"
           >
             <div class="flex items-center gap-2">
               {% if not m.is_active %}
-                <span class="text-[9px] tracking-wider border border-zinc-600 text-zinc-500 bg-zinc-500/10 rounded px-1.5 py-0.5 shrink-0">INACTIVO</span>
+                <span class="text-[9px] tracking-wider text-zinc-500 bg-zinc-100 rounded px-1.5 py-0.5 shrink-0">INACTIVO</span>
               {% endif %}
               <div>
-                <p class="text-[13px] text-zinc-200">{{ m.domain }}</p>
-                <p class="text-[10px] text-zinc-600 mt-0.5">registrado el {{ m.created_at.strftime('%Y-%m-%d') }}</p>
+                <p class="text-[13px] text-zinc-800">{{ m.domain }}</p>
+                <p class="text-[10px] text-zinc-400 mt-0.5">registrado el {{ m.created_at.strftime('%Y-%m-%d') }}</p>
               </div>
             </div>
             <span class="text-[10px] text-zinc-500 shrink-0">{{ m.alerts.count() }} alertas</span>
           </a>
         {% else %}
-          <p class="text-[12px] text-zinc-600">Todavía no hay dominios registrados.</p>
+          <p class="text-[12px] text-zinc-400">Todavía no hay dominios registrados.</p>
         {% endfor %}
       </div>
     </div>
-  </div>
-
-</body>
-</html>
+{% endblock %}

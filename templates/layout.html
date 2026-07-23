@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{% block title %}Akila - Auditoría Dmarc{% endblock %}</title>
+<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace-theme-default.css">
+<script>window.paceOptions = { minTime: 100, ghostTime: 50, catchupTime: 100, initialRate: 0.3 };</script>
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+  integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+  crossorigin="anonymous"
+></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+{% include "partials/pdf_download_script.html" %}
+{% block head_extra %}{% endblock %}
+</head>
+<body class="min-h-screen font-jakarta text-zinc-700 antialiased{% block body_class %}{% endblock %}">
+
+  <div class="relative lg:flex min-h-screen">
+    <input type="checkbox" id="sidebar-toggle" class="hidden peer">
+
+    {% include "partials/sidebar.html" %}
+
+    <label for="sidebar-toggle" class="lg:hidden fixed inset-0 bg-black/60 z-30 hidden peer-checked:block"></label>
+
+    <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+      {% include "partials/topbar.html" %}
+      <main class="flex-1">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+</body>
+</html>

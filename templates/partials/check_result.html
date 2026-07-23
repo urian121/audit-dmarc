@@ -1,102 +1,102 @@
 {% macro render_card(card) %}
-<div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4 break-inside-avoid">
+<div class="rise bg-white shadow-sm rounded-md p-4 break-inside-avoid">
   <div class="mb-3">
     <div class="flex items-center justify-between">
-      <h3 class="text-xs tracking-[0.15em] text-zinc-400 uppercase">{{ card.title }}</h3>
+      <h3 class="text-xs tracking-[0.15em] text-zinc-500 uppercase">{{ card.title }}</h3>
       <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 {{ card.badge_cls }}">{{ card.badge_label }}</span>
     </div>
     {% if card.help_text %}
-      <p class="mt-1 text-[10.5px] text-zinc-600 leading-snug">{{ card.help_text }}</p>
+      <p class="mt-1 text-[10.5px] text-zinc-400 leading-snug">{{ card.help_text }}</p>
     {% endif %}
   </div>
 
   {% if card.kind == 'empty' %}
-    <p class="text-[11px] text-zinc-600">sin datos</p>
+    <p class="text-[11px] text-zinc-400">sin datos</p>
 
   {% elif card.kind == 'error' %}
-    <p class="text-[11px] text-rose-400">{{ card.message }}</p>
+    <p class="text-[11px] text-rose-600">{{ card.message }}</p>
 
   {% elif card.kind == 'text' %}
-    <p class="text-[11px] text-zinc-400">{{ card.text }}</p>
+    <p class="text-[11px] text-zinc-600">{{ card.text }}</p>
 
   {% elif card.kind == 'dmarc' or card.kind == 'spf' %}
     {% if card.has_record %}
-      <p class="text-[11px] text-emerald-400 mb-2">✔ Este dominio tiene {{ card.title }} configurado.</p>
+      <p class="text-[11px] text-emerald-600 mb-2">✔ Este dominio tiene {{ card.title }} configurado.</p>
     {% else %}
-      <p class="text-[11px] text-rose-400 mb-2">✘ Este dominio NO tiene {{ card.title }} configurado.</p>
+      <p class="text-[11px] text-rose-600 mb-2">✘ Este dominio NO tiene {{ card.title }} configurado.</p>
       {% if card.message %}<p class="text-[11px] text-zinc-500">{{ card.message }}</p>{% endif %}
     {% endif %}
     {% if card.explanations %}
-      <ul class="space-y-1 text-[11px] text-zinc-300 list-disc list-inside">
+      <ul class="space-y-1 text-[11px] text-zinc-700 list-disc list-inside">
         {% for line in card.explanations %}<li>{{ line }}</li>{% endfor %}
       </ul>
     {% endif %}
     {% if card.record %}
-      <pre class="record mt-3 overflow-x-auto text-[11px] text-zinc-500 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ card.record }}</pre>
+      <pre class="record mt-3 overflow-x-auto text-[11px] text-zinc-600 bg-zinc-50 rounded p-2.5">{{ card.record }}</pre>
     {% endif %}
     {% if card.warnings %}
-      <ul class="mt-2 space-y-1 text-[11px] text-amber-400/90 list-disc list-inside">
+      <ul class="mt-2 space-y-1 text-[11px] text-amber-700 list-disc list-inside">
         {% for w in card.warnings %}<li>{{ w }}</li>{% endfor %}
       </ul>
     {% endif %}
 
   {% elif card.kind == 'record' %}
     {% if card.record %}
-      <pre class="record mt-2 overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ card.record }}</pre>
+      <pre class="record mt-2 overflow-x-auto text-[11px] text-zinc-700 bg-zinc-50 rounded p-2.5">{{ card.record }}</pre>
     {% endif %}
     {% if card.kv %}
       <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2">
         {% for k, v in card.kv.items() %}
-          <span class="text-zinc-600">{{ k }}</span>
-          <span class="text-zinc-300 truncate">{{ v }}</span>
+          <span class="text-zinc-400">{{ k }}</span>
+          <span class="text-zinc-700 truncate">{{ v }}</span>
         {% endfor %}
       </div>
     {% endif %}
     {% if card.tags %}
-      <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2 pt-2 border-t border-zinc-800/60">
+      <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2 pt-2 border-t border-zinc-100">
         {% for k, v in card.tags.items() %}
-          <span class="text-zinc-600">{{ k }}</span>
-          <span class="text-zinc-300 truncate">{{ v }}</span>
+          <span class="text-zinc-400">{{ k }}</span>
+          <span class="text-zinc-700 truncate">{{ v }}</span>
         {% endfor %}
       </div>
     {% endif %}
     {% if card.policy_kv %}
       <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2">
         {% for k, v in card.policy_kv.items() %}
-          <span class="text-zinc-600">{{ k }}</span>
-          <span class="text-zinc-300 truncate">{{ v }}</span>
+          <span class="text-zinc-400">{{ k }}</span>
+          <span class="text-zinc-700 truncate">{{ v }}</span>
         {% endfor %}
       </div>
     {% endif %}
     {% if card.policy_mx %}
       <div class="flex flex-wrap gap-1.5 mt-2">
         {% for m in card.policy_mx %}
-          <span class="text-[11px] bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-zinc-300">{{ m }}</span>
+          <span class="text-[11px] bg-zinc-50 rounded px-2 py-1 text-zinc-700">{{ m }}</span>
         {% endfor %}
       </div>
     {% endif %}
     {% if card.warnings %}
-      <ul class="mt-2 space-y-1 text-[11px] text-amber-400/90 list-disc list-inside">
+      <ul class="mt-2 space-y-1 text-[11px] text-amber-700 list-disc list-inside">
         {% for w in card.warnings %}<li>{{ w }}</li>{% endfor %}
       </ul>
     {% endif %}
     {% if not card.record and not card.kv and not card.tags and not card.policy_kv and not card.policy_mx and not card.warnings %}
-      <p class="text-[11px] text-zinc-600">sin registro publicado</p>
+      <p class="text-[11px] text-zinc-400">sin registro publicado</p>
     {% endif %}
 
   {% elif card.kind == 'list' %}
     {% if card.providers %}
-      <p class="text-[11px] text-zinc-500 mb-2">Proveedor detectado: <span class="text-zinc-300">{{ card.providers|join(', ') }}</span></p>
+      <p class="text-[11px] text-zinc-500 mb-2">Proveedor detectado: <span class="text-zinc-700">{{ card.providers|join(', ') }}</span></p>
     {% endif %}
     <div class="flex flex-wrap gap-1.5">
       {% for h in card.hostnames %}
-        <span class="text-[11px] bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-zinc-300">{{ h }}</span>
+        <span class="text-[11px] bg-zinc-50 rounded px-2 py-1 text-zinc-700">{{ h }}</span>
       {% else %}
-        <span class="text-[11px] text-zinc-600">sin nameservers</span>
+        <span class="text-[11px] text-zinc-400">sin nameservers</span>
       {% endfor %}
     </div>
     {% if card.warnings %}
-      <ul class="mt-2 space-y-1 text-[11px] text-amber-400/90 list-disc list-inside">
+      <ul class="mt-2 space-y-1 text-[11px] text-amber-700 list-disc list-inside">
         {% for w in card.warnings %}<li>{{ w }}</li>{% endfor %}
       </ul>
     {% endif %}
@@ -104,44 +104,44 @@
   {% elif card.kind == 'mx' %}
     <div class="mt-1">
       {% for h in card.hosts %}
-        <div class="flex items-center justify-between gap-2 py-1 border-b border-zinc-800/60 last:border-0">
-          <span class="text-[11px] text-zinc-300 truncate">{{ h.hostname }} <span class="text-zinc-600">(prio {{ h.preference }})</span></span>
+        <div class="flex items-center justify-between gap-2 py-1 border-b border-zinc-100 last:border-0">
+          <span class="text-[11px] text-zinc-700 truncate">{{ h.hostname }} <span class="text-zinc-400">(prio {{ h.preference }})</span></span>
           <span class="flex gap-1 shrink-0">
             {% for flag_name, flag_val in h.flags %}
-              <span class="text-[10px] px-1.5 py-0.5 rounded border {{ 'border-emerald-500/30 text-emerald-400' if flag_val else 'border-zinc-700 text-zinc-600' }}">{{ flag_name }}</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded {{ 'border border-emerald-200 text-emerald-700' if flag_val else 'bg-zinc-100 text-zinc-400' }}">{{ flag_name }}</span>
             {% endfor %}
           </span>
         </div>
       {% else %}
-        <p class="text-[11px] text-zinc-600">sin registros MX</p>
+        <p class="text-[11px] text-zinc-400">sin registros MX</p>
       {% endfor %}
     </div>
     {% if card.warnings %}
-      <ul class="mt-2 space-y-1 text-[11px] text-amber-400/90 list-disc list-inside">
+      <ul class="mt-2 space-y-1 text-[11px] text-amber-700 list-disc list-inside">
         {% for w in card.warnings %}<li>{{ w }}</li>{% endfor %}
       </ul>
     {% endif %}
 
   {% elif card.kind == 'dkim' %}
     {% if card.found %}
-      <p class="text-[11px] text-emerald-400 mb-2">✔ Este dominio tiene al menos un selector DKIM publicado.</p>
+      <p class="text-[11px] text-emerald-600 mb-2">✔ Este dominio tiene al menos un selector DKIM publicado.</p>
       {% for e in card.found %}
-        <div class="py-1.5 border-b border-zinc-800/60 last:border-0">
+        <div class="py-1.5 border-b border-zinc-100 last:border-0">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[11px] text-zinc-300">{{ e.selector }}._domainkey</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded border {{ 'border-emerald-500/30 text-emerald-400' if e.valid else 'border-rose-500/30 text-rose-400' }}">
+            <span class="text-[11px] text-zinc-700">{{ e.selector }}._domainkey</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded border {{ 'border-emerald-200 text-emerald-700' if e.valid else 'border-rose-200 text-rose-700' }}">
               {% if e.valid %}{{ (e.key_type ~ ' ' ~ (e.key_size or ''))|trim }}{% else %}inválido{% endif %}
             </span>
           </div>
-          {% if e.error %}<p class="text-[11px] text-rose-400 mt-1">{{ e.error }}</p>{% endif %}
-          {% if e.record %}<pre class="record mt-2 overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ e.record }}</pre>{% endif %}
+          {% if e.error %}<p class="text-[11px] text-rose-600 mt-1">{{ e.error }}</p>{% endif %}
+          {% if e.record %}<pre class="record mt-2 overflow-x-auto text-[11px] text-zinc-700 bg-zinc-50 rounded p-2.5">{{ e.record }}</pre>{% endif %}
         </div>
       {% endfor %}
     {% else %}
-      <p class="text-[11px] text-rose-400 mb-2">✘ No se encontró DKIM en los selectores probados. El dominio podría usar un selector personalizado fuera de este análisis.</p>
+      <p class="text-[11px] text-rose-600 mb-2">✘ No se encontró DKIM en los selectores probados. El dominio podría usar un selector personalizado fuera de este análisis.</p>
     {% endif %}
     {% if card.not_found %}
-      <p class="text-[10px] text-zinc-700 mt-2">selectores probados sin resultado: {{ card.not_found|join(', ') }}</p>
+      <p class="text-[10px] text-zinc-400 mt-2">selectores probados sin resultado: {{ card.not_found|join(', ') }}</p>
     {% endif %}
   {% endif %}
 </div>
@@ -158,7 +158,7 @@
   <a
     href="{{ url_for('descargar_pdf', domain=result_domain) }}"
     hx-on:click="event.preventDefault(); downloadPdfReport(this)"
-    class="inline-flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 text-zinc-300 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors"
+    class="inline-flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase shadow-sm bg-white rounded-md px-3 py-1.5 text-zinc-600 hover:text-[#474545] transition-colors"
   >
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -170,31 +170,31 @@
 </div>
 
 {% if ai_summary %}
-<div class="rise mb-4 border border-[#ef5184]/20 bg-[#ef5184]/[0.04] rounded-md p-4 break-inside-avoid">
+<div class="rise mb-4 bg-[#474545]/[0.06] rounded-md p-4 break-inside-avoid">
   <div class="flex items-center gap-2 mb-2">
-    <span class="w-1.5 h-1.5 rounded-full bg-[#ef5184]"></span>
-    <h3 class="text-sm tracking-[0.2em] text-[#ef5184] uppercase font-semibold">Resumen</h3>
+    <span class="w-1.5 h-1.5 rounded-full bg-[#474545]"></span>
+    <h3 class="text-sm tracking-[0.2em] text-[#474545] uppercase font-semibold">Resumen</h3>
   </div>
-  <p class="text-[12px] text-zinc-300 leading-relaxed whitespace-pre-line">{{ ai_summary }}</p>
+  <p class="text-[12px] text-zinc-700 leading-relaxed whitespace-pre-line">{{ ai_summary }}</p>
 </div>
 {% endif %}
 
-<div class="rise border border-zinc-800 rounded-md px-4 py-3 bg-zinc-900/40 mb-4 break-inside-avoid">
+<div class="rise shadow-sm rounded-md px-4 py-3 bg-white mb-4 break-inside-avoid">
   <div class="flex flex-wrap items-center gap-4 text-xs mb-3">
-    <span class="text-zinc-200">{{ result_domain }}</span>
-    <span class="text-zinc-700">/</span>
+    <span class="text-zinc-800">{{ result_domain }}</span>
+    <span class="text-zinc-300">/</span>
     <span class="text-zinc-500">{{ base_domain }}</span>
     <span class="ml-auto {{ summary.score_color }} font-semibold">{{ summary.score }}% saludable</span>
   </div>
-  <div class="flex w-full h-1.5 rounded-full overflow-hidden bg-zinc-800/60">
+  <div class="flex w-full h-1.5 rounded-full overflow-hidden bg-zinc-100">
     <span class="bg-emerald-400" style="width: {{ summary.ok_pct }}%"></span>
     <span class="bg-amber-400" style="width: {{ summary.warn_pct }}%"></span>
     <span class="bg-rose-400" style="width: {{ summary.fail_pct }}%"></span>
   </div>
   <div class="flex items-center gap-3 mt-2 text-[10px] text-zinc-500">
-    <span class="text-emerald-400">{{ summary.ok }} ok</span>
-    <span class="text-amber-400">{{ summary.warn }} advertencias</span>
-    <span class="text-rose-400">{{ summary.fail }} fallas</span>
+    <span class="text-emerald-600">{{ summary.ok }} ok</span>
+    <span class="text-amber-600">{{ summary.warn }} advertencias</span>
+    <span class="text-rose-600">{{ summary.fail }} fallas</span>
   </div>
 </div>
 
@@ -203,17 +203,17 @@
   <h2 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase mb-2">Riesgos y qué hacer</h2>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-1 gap-3">
     {% for risk in risks %}
-      <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-3.5 break-inside-avoid">
+      <div class="bg-white shadow-sm rounded-md p-3.5 break-inside-avoid">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-xs tracking-[0.1em] text-zinc-300 uppercase">{{ risk.title }}</h3>
+          <h3 class="text-xs tracking-[0.1em] text-zinc-700 uppercase">{{ risk.title }}</h3>
           <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 shrink-0 {{ risk.severity_cls }}">{{ risk.severity }}</span>
         </div>
         <p class="text-[11px] text-zinc-500 leading-relaxed">{{ risk.mitigation }}</p>
         {% if risk.dns_example %}
-          <div class="mt-2.5 pt-2.5 border-t border-zinc-800/60">
-            <span class="block mb-1 text-[10px] text-zinc-600">{{ risk.dns_example.host }} · {{ risk.dns_example.type }}</span>
-            <pre class="record overflow-x-auto text-[10px] text-zinc-500 bg-zinc-950 border border-zinc-800/70 rounded p-2">{{ risk.dns_example.value }}</pre>
-            <p class="mt-1.5 text-[10px] text-zinc-700">Ejemplo — cambia <code class="text-zinc-600">tls-reports@...</code> por una casilla que tú controles y puedas leer.</p>
+          <div class="mt-2.5 pt-2.5 border-t border-zinc-100">
+            <span class="block mb-1 text-[10px] text-zinc-400">{{ risk.dns_example.host }} · {{ risk.dns_example.type }}</span>
+            <pre class="record overflow-x-auto text-[10px] text-zinc-600 bg-zinc-50 rounded p-2">{{ risk.dns_example.value }}</pre>
+            <p class="mt-1.5 text-[10px] text-zinc-400">Ejemplo — cambia <code class="text-zinc-500">tls-reports@...</code> por una casilla que tú controles y puedas leer.</p>
           </div>
         {% endif %}
       </div>

@@ -9,10 +9,10 @@ from utils.formatting import (
 
 # Etiqueta y clases Tailwind del badge de estado que se muestra en cada tarjeta.
 STATUS_META = {
-    "ok":   ("OK", "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"),
-    "warn": ("ADVERTENCIA", "bg-amber-500/10 text-amber-400 border-amber-500/30"),
-    "fail": ("FALLA", "bg-rose-500/10 text-rose-400 border-rose-500/30"),
-    "na":   ("N/D", "bg-zinc-500/10 text-zinc-500 border-zinc-500/30"),
+    "ok":   ("OK", "bg-emerald-50 text-emerald-700 border-emerald-200"),
+    "warn": ("ADVERTENCIA", "bg-amber-50 text-amber-700 border-amber-200"),
+    "fail": ("FALLA", "bg-rose-50 text-rose-700 border-rose-200"),
+    "na":   ("N/D", "bg-zinc-100 text-zinc-500 border-zinc-200"),
 }
 
 # Protocolos opcionales/avanzados: si el registro simplemente no existe, es
@@ -346,10 +346,10 @@ RISK_MITIGATIONS = {
 
 # Severidad por estado; las advertencias de protocolos opcionales (SOFT_ABSENCE_KEYS) pesan menos.
 RISK_SEVERITY = {
-    "fail": ("Alta", "border-rose-500/30 text-rose-400 bg-rose-500/10"),
-    "warn": ("Media", "border-amber-500/30 text-amber-400 bg-amber-500/10"),
+    "fail": ("Alta", "border-rose-200 text-rose-700 bg-rose-50"),
+    "warn": ("Media", "border-amber-200 text-amber-700 bg-amber-50"),
 }
-RISK_SEVERITY_SOFT_WARN = ("Baja", "border-zinc-600 text-zinc-400 bg-zinc-500/10")
+RISK_SEVERITY_SOFT_WARN = ("Baja", "border-zinc-200 text-zinc-500 bg-zinc-100")
 SEVERITY_RANK = {"Alta": 0, "Media": 1, "Baja": 2}
 SOFT_ABSENCE_TITLES = ("MTA-STS", "TLS-RPT", "BIMI")
 
@@ -459,11 +459,11 @@ def build_summary(data):
     # un ok, y una falla no suma nada — coherente con SOFT_ABSENCE_KEYS.
     score = round(((ok + warn * 0.5) / total) * 100) if total else 0
     if score >= 80:
-        score_color = "text-emerald-400"
+        score_color = "text-emerald-600"
     elif score >= 50:
-        score_color = "text-amber-400"
+        score_color = "text-amber-600"
     else:
-        score_color = "text-rose-400"
+        score_color = "text-rose-600"
 
     return {
         "ok": ok, "warn": warn, "fail": fail, "total": total,

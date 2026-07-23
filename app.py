@@ -8,7 +8,7 @@ from flask_login import LoginManager, current_user, login_required, login_user, 
 
 from models import User, db
 from services.ai_summary import generate_summary
-from services.auth_service import authenticate, register_user
+from services.auth_service import authenticate, register_user, update_email, update_password
 from services.card_builder import build_cards, build_risks, build_summary
 from services.checkdmarc_service import build_dns_screen_data, run_check
 from services.pdf_service import build_dashboard_pdf_bytes, build_pdf_bytes
@@ -226,6 +226,37 @@ def auth_logout():
     """Cierra la sesión activa y va directo al login (evita el redirect de más hacia `/` que rebotaría igual)."""
     logout_user()
     return redirect(url_for("auth_login"))
+
+
+@app.route("/cuenta", methods=["GET"])
+@login_required
+def account():
+    """Perfil de la cuenta logueada: ver y actualizar correo/contraseña."""
+    return render_template("auth/account.html")
+
+
+@app.route("/cuenta/correo", methods=["POST"])
+@login_required
+def account_update_email():
+    """Actualiza el correo de la cuenta logueada."""
+    ok, error = update_email(current_user, request.form.get("email", ""))
+    if not ok:
+        return render_template("auth/account.html", email_error=error), 400
+    return render_template("auth/account.html", email_success="Correo actualizado.")
+
+
+@app.route("/cuenta/contrasena", methods=["POST"])
+@login_required
+def account_update_password():
+    """Cambia la contraseña de la cuenta logueada — exige la actual para confirmarla."""
+    ok, error = update_password(
+        current_user,
+        request.form.get("current_password", ""),
+        request.form.get("new_password", ""),
+    )
+    if not ok:
+        return render_template("auth/account.html", password_error=error), 400
+    return render_template("auth/account.html", password_success="Contraseña actualizada.")
 
 
 @app.route("/monitoreo", methods=["GET", "POST"])

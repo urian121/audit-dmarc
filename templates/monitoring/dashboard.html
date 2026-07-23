@@ -1,39 +1,21 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Akila - {{ monitored.domain }} // monitoreo</title>
-<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace-theme-default.css">
-<script>window.paceOptions = { minTime: 100, ghostTime: 50, catchupTime: 100, initialRate: 0.3 };</script>
-<script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
-{% include "partials/pdf_download_script.html" %}
-</head>
-<body class="min-h-screen font-mono text-zinc-300 antialiased">
-
+{% extends "layout.html" %}
+{% block title %}Akila - {{ monitored.domain }} // monitoreo{% endblock %}
+{% block content %}
 {% macro verify_badge(label, passed, pass_text, fail_text) %}
   <span class="relative inline-flex group">
-    <span class="text-[10px] px-1.5 py-0.5 rounded border cursor-help {{ 'border-emerald-500/30 text-emerald-400' if passed else 'border-rose-500/30 text-rose-400' }}">{{ label }}</span>
-    <span class="pointer-events-none invisible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-56 rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-2 text-[11px] leading-snug text-zinc-300 shadow-xl opacity-0 transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
+    <span class="text-[10px] px-1.5 py-0.5 rounded border cursor-help {{ 'border-emerald-200 text-emerald-700' if passed else 'border-rose-200 text-rose-700' }}">{{ label }}</span>
+    <span class="pointer-events-none invisible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-56 rounded-md bg-white px-2.5 py-2 text-[11px] leading-snug text-zinc-700 shadow-xl opacity-0 transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
       {{ pass_text if passed else fail_text }}
     </span>
   </span>
 {% endmacro %}
-
-  <div class="fixed inset-0 bg-grid pointer-events-none"></div>
-
-  <div class="relative">
-    {% include "partials/header.html" %}
 
     <div class="max-w-4xl mx-auto px-6 py-16">
     <div class="flex items-center justify-between gap-3 mb-1">
       <div class="flex items-center gap-3">
         <a
           href="{{ url_for('monitoring_list') }}"
-          class="inline-flex items-center justify-center w-8 h-8 rounded-md border border-zinc-800 text-zinc-400 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors shrink-0"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-md shadow-sm bg-white text-zinc-500 hover:text-[#474545] transition-colors shrink-0"
           title="Volver a la lista de monitores"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
@@ -41,8 +23,8 @@
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
         </a>
-        <h1 class="text-2xl text-zinc-100 tracking-tight">{{ monitored.domain }}</h1>
-        <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 {{ 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' if monitored.is_active else 'border-zinc-600 text-zinc-500 bg-zinc-500/10' }}">
+        <h1 class="text-2xl text-zinc-900 tracking-tight">{{ monitored.domain }}</h1>
+        <span class="text-[10px] tracking-wider rounded px-1.5 py-0.5 {{ 'border border-emerald-200 text-emerald-700 bg-emerald-50' if monitored.is_active else 'text-zinc-500 bg-zinc-100' }}">
           {{ 'ACTIVO' if monitored.is_active else 'INACTIVO' }}
         </span>
       </div>
@@ -51,7 +33,7 @@
         <a
           href="{{ url_for('monitoring_dashboard_pdf', access_token=monitored.access_token) }}"
           onclick="event.preventDefault(); downloadPdfReport(this)"
-          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors"
+          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase shadow-sm bg-white rounded-md px-3 py-1.5 hover:text-[#474545] transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -64,8 +46,8 @@
         <a
           id="ver-dns-link"
           href="{{ url_for('monitoring_dns', access_token=monitored.access_token) }}"
-          onclick="this.querySelector('[data-label]').textContent = 'Cargando DNS…'; this.classList.remove('border-zinc-800','text-zinc-300'); this.classList.add('border-[#ef5184]/60','text-[#ef5184]','pointer-events-none');"
-          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors"
+          onclick="this.querySelector('[data-label]').textContent = 'Cargando DNS…'; this.classList.remove('text-zinc-600'); this.classList.add('text-[#474545]','pointer-events-none');"
+          class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase shadow-sm bg-white rounded-md px-3 py-1.5 hover:text-[#474545] transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
             <polyline points="16 18 22 12 16 6"></polyline>
@@ -77,7 +59,7 @@
           <input type="hidden" name="activar" value="{{ '0' if monitored.is_active else '1' }}">
           <button
             type="submit"
-            class="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 tracking-[0.15em] uppercase border border-zinc-800 rounded-md px-3 py-1.5 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors"
+            class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase shadow-sm bg-white rounded-md px-3 py-1.5 hover:text-[#474545] transition-colors"
           >
             {% if monitored.is_active %}
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
@@ -95,12 +77,12 @@
         </form>
       </div>
     </div>
-    <p class="text-[11px] text-zinc-600 mb-8">
+    <p class="text-[11px] text-zinc-400 mb-8">
       registrado el {{ monitored.created_at.strftime('%Y-%m-%d') }} · alertas a {{ monitored.owner_email }}
     </p>
 
     {% if not monitored.is_active %}
-    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-8">
+    <div class="bg-white shadow-sm rounded-md p-4 mb-8">
       <p class="text-[12px] text-zinc-500 leading-relaxed">
         El monitoreo de este dominio está desactivado: no se revisan cambios de DNS ni se procesan reportes nuevos.
         El historial de abajo se conserva. Reactívalo cuando quieras con el botón de arriba.
@@ -109,23 +91,23 @@
     {% endif %}
 
     {% if not reports %}
-    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-8">
+    <div class="bg-white shadow-sm rounded-md p-4 mb-8">
       <p class="text-[12px] text-zinc-500 leading-relaxed">
         Todavía no llegó ningún reporte DMARC para este dominio. Confirma que agregaste
-        <code class="text-zinc-300">rua=mailto:{{ rua_mailbox }}</code> a tu registro DMARC —
+        <code class="text-zinc-700">rua=mailto:{{ rua_mailbox }}</code> a tu registro DMARC —
         los proveedores mandan reportes una vez al día, así que puede tardar 24-48h en aparecer el primero.
       </p>
     </div>
     {% endif %}
 
-    <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-1">Alertas recientes</h2>
+    <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase mb-1">Alertas recientes</h2>
     <p class="text-[11px] text-zinc-500 leading-relaxed mb-3 max-w-2xl">
       Remitentes que enviaron correo en nombre de este dominio pero no están declarados en su SPF. No siempre es un ataque —
       también aparece cuando se agrega una herramienta nueva (marketing, facturación, etc.) sin sumarla todavía al SPF —
       pero si no reconoces el remitente, vale la pena investigarlo.
     </p>
     {% if alerts %}
-      <p class="text-[11px] text-zinc-600 mb-3">
+      <p class="text-[11px] text-zinc-400 mb-3">
         {{ alerts|length }} alerta{{ 's' if alerts|length != 1 }}
         {%- if alert_groups %} · {{ alert_groups|length }} remitente{{ 's' if alert_groups|length != 1 }} distinto{{ 's' if alert_groups|length != 1 }}{% endif -%}
         {%- if other_alerts %} · {{ other_alerts|length }} cambio{{ 's' if other_alerts|length != 1 }} de configuración{% endif %}
@@ -133,32 +115,32 @@
     {% endif %}
     <div class="grid grid-cols-1 gap-3 mb-10">
       {% for alert in other_alerts %}
-        <div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
+        <div class="rise bg-white shadow-sm rounded-md p-4">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-500/30 text-amber-400 bg-amber-500/10">
+            <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-200 text-amber-700 bg-amber-50">
               {{ alert.kind_label }}
             </span>
-            <span class="text-[10px] text-zinc-600">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+            <span class="text-[10px] text-zinc-400">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
           </div>
-          <p class="text-[12px] text-zinc-300">{{ alert.message }}</p>
+          <p class="text-[12px] text-zinc-700">{{ alert.message }}</p>
         </div>
       {% endfor %}
 
       {% for group in alert_groups %}
-        <details class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
+        <details class="rise bg-white shadow-sm rounded-md p-4">
           <summary class="flex items-center justify-between gap-3 cursor-pointer">
             <span class="flex items-center gap-2 min-w-0">
-              <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-rose-500/30 text-rose-400 bg-rose-500/10 shrink-0">Remitente desconocido</span>
-              <span class="text-[12px] text-zinc-300 truncate">{{ group.org }}</span>
-              <span class="text-[10px] text-zinc-600 shrink-0">&times;{{ group.count }}</span>
+              <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-rose-200 text-rose-700 bg-rose-50 shrink-0">Remitente desconocido</span>
+              <span class="text-[12px] text-zinc-700 truncate">{{ group.org }}</span>
+              <span class="text-[10px] text-zinc-400 shrink-0">&times;{{ group.count }}</span>
             </span>
-            <span class="text-[10px] text-zinc-600 shrink-0">última vez {{ group.last_seen.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+            <span class="text-[10px] text-zinc-400 shrink-0">última vez {{ group.last_seen.strftime('%Y-%m-%d %H:%M') }} UTC</span>
           </summary>
-          <div class="mt-3 pt-3 border-t border-zinc-800/60 space-y-1.5">
+          <div class="mt-3 pt-3 border-t border-zinc-100 space-y-1.5">
             {% for alert in group.alerts %}
               <div class="flex items-center justify-between gap-3 text-[11px]">
-                <span class="text-zinc-400 truncate">{{ alert.message }}</span>
-                <span class="text-zinc-600 shrink-0">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+                <span class="text-zinc-500 truncate">{{ alert.message }}</span>
+                <span class="text-zinc-400 shrink-0">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
               </div>
             {% endfor %}
           </div>
@@ -166,30 +148,30 @@
       {% endfor %}
 
       {% if not other_alerts and not alert_groups %}
-        <p class="text-[12px] text-zinc-600">Sin alertas por ahora — buena señal.</p>
+        <p class="text-[12px] text-zinc-400">Sin alertas por ahora — buena señal.</p>
       {% endif %}
     </div>
 
-    <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-1">Reportes DMARC recibidos</h2>
+    <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase mb-1">Reportes DMARC recibidos</h2>
     <p class="text-[11px] text-zinc-500 leading-relaxed mb-3 max-w-2xl">
       Un resumen que cada proveedor de correo (Gmail, Outlook, Mimecast, etc.) manda una vez al día: qué IPs enviaron
       correo en nombre de este dominio, cuántas veces, y si pasaron la validación SPF/DKIM. De aquí sale la información
-      de las alertas de arriba. Las etiquetas <span class="text-emerald-400">spf</span>/<span class="text-emerald-400">dkim</span>
-      en verde indican que ese envío pasó esa validación; en <span class="text-rose-400">rojo</span>, que falló —
+      de las alertas de arriba. Las etiquetas <span class="text-emerald-700">spf</span>/<span class="text-emerald-700">dkim</span>
+      en verde indican que ese envío pasó esa validación; en <span class="text-rose-700">rojo</span>, que falló —
       un fallo aislado no es grave, pero si un mismo remitente falla siempre, vale la pena revisarlo.
     </p>
     <div class="grid grid-cols-1 gap-3">
       {% for report in reports %}
-        <div class="rise bg-zinc-900/50 border border-zinc-800 rounded-md p-4">
+        <div class="rise bg-white shadow-sm rounded-md p-4">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-[12px] text-zinc-200">{{ report.org_name or 'origen desconocido' }}</span>
-            <span class="text-[10px] text-zinc-600">recibido {{ report.received_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+            <span class="text-[12px] text-zinc-800">{{ report.org_name or 'origen desconocido' }}</span>
+            <span class="text-[10px] text-zinc-400">recibido {{ report.received_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
           </div>
           {% for record in report.records %}
-            <div class="flex items-center justify-between gap-2 py-1 border-b border-zinc-800/60 last:border-0">
-              <span class="text-[11px] text-zinc-300 truncate">
+            <div class="flex items-center justify-between gap-2 py-1 border-b border-zinc-100 last:border-0">
+              <span class="text-[11px] text-zinc-700 truncate">
                 {{ record.source_ip }}
-                <span class="text-zinc-600">({{ record.source_asn_org or 'sin identificar' }}{% if record.source_country %}, {{ record.source_country }}{% endif %}) &times;{{ record.count }}</span>
+                <span class="text-zinc-400">({{ record.source_asn_org or 'sin identificar' }}{% if record.source_country %}, {{ record.source_country }}{% endif %}) &times;{{ record.count }}</span>
               </span>
               <span class="flex gap-1 shrink-0">
                 {{ verify_badge('spf', record.spf_aligned, 'Este envío pasó la alineación SPF — el dominio autenticado por SPF coincide con el From: del correo.', 'Este envío NO pasó la alineación SPF — el dominio autenticado por SPF no coincide con el From: del correo.') }}
@@ -199,11 +181,10 @@
           {% endfor %}
         </div>
       {% else %}
-        <p class="text-[12px] text-zinc-600">Sin reportes todavía.</p>
+        <p class="text-[12px] text-zinc-400">Sin reportes todavía.</p>
       {% endfor %}
     </div>
     </div>
-  </div>
 
   <script>
     // Al volver con el botón "atrás" del navegador, Chrome/Firefox restauran la
@@ -215,9 +196,8 @@
       if (!link) return;
       var label = link.querySelector("[data-label]");
       if (label) label.textContent = "Ver DNS";
-      link.classList.remove("border-[#ef5184]/60", "text-[#ef5184]", "pointer-events-none");
-      link.classList.add("border-zinc-800", "text-zinc-300");
+      link.classList.remove("text-[#474545]", "pointer-events-none");
+      link.classList.add("text-zinc-600");
     });
   </script>
-</body>
-</html>
+{% endblock %}

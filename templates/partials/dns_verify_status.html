@@ -1,10 +1,10 @@
 <div
   id="dns-verify-status"
-  class="flex items-center justify-between gap-3 mt-4 border rounded-md px-3 py-2.5 {{ 'bg-emerald-500/10 border-emerald-500/30' if monitored.dns_verified else 'bg-zinc-950/50 border-zinc-800' }}"
+  class="flex items-center justify-between gap-3 mt-4 rounded-md px-3 py-2.5 {{ 'border border-emerald-200 bg-emerald-50' if monitored.dns_verified else 'bg-zinc-50' }}"
 >
-  <p class="text-[12px] leading-relaxed {{ 'text-emerald-400' if monitored.dns_verified else 'text-zinc-500' }}">
+  <p class="text-[12px] leading-relaxed {{ 'text-emerald-700' if monitored.dns_verified else 'text-zinc-500' }}">
     {% if monitored.dns_verified %}
-      Verificado — tu DNS ya tiene publicada esta casilla en el <code class="text-emerald-300">rua=</code>{% if monitored.dns_verified_at %} (comprobado el {{ monitored.dns_verified_at.strftime('%Y-%m-%d %H:%M') }} UTC){% endif %}.
+      Verificado — tu DNS ya tiene publicada esta casilla en el <code class="text-emerald-800">rua=</code>{% if monitored.dns_verified_at %} (comprobado el {{ monitored.dns_verified_at.strftime('%Y-%m-%d %H:%M') }} UTC){% endif %}.
     {% elif monitored.dns_verified_at %}
       Todavía no se detecta el cambio en tu DNS (última comprobación: {{ monitored.dns_verified_at.strftime('%Y-%m-%d %H:%M') }} UTC) — los cambios de DNS pueden tardar en propagarse, intenta de nuevo en unos minutos.
     {% else %}
@@ -16,7 +16,7 @@
     hx-target="#dns-verify-status"
     hx-swap="outerHTML"
     hx-disabled-elt="this"
-    class="verify-btn inline-flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase border rounded-md px-3 py-1.5 disabled:opacity-50 transition-colors shrink-0 {{ 'border-emerald-500/30 text-emerald-300 hover:border-emerald-400/70 hover:text-emerald-200' if monitored.dns_verified else 'border-zinc-800 text-zinc-300 hover:border-[#ef5184]/60 hover:text-[#ef5184]' }}"
+    class="verify-btn inline-flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase border rounded-md px-3 py-1.5 disabled:opacity-50 transition-colors shrink-0 {{ 'border-emerald-300 text-emerald-700 hover:border-emerald-400 hover:text-emerald-800' if monitored.dns_verified else 'border-transparent shadow-sm bg-white text-zinc-600 hover:border-[#474545]/60 hover:text-[#474545]' }}"
   >
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
       <polyline points="23 4 23 10 17 10"></polyline>

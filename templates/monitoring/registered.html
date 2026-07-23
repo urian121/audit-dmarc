@@ -1,36 +1,19 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Akila - Monitoreo continuo de DMARC</title>
-<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace-theme-default.css">
-<script>window.paceOptions = { minTime: 100, ghostTime: 50, catchupTime: 100, initialRate: 0.3 };</script>
-<script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<script
-  src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
-  integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
-  crossorigin="anonymous"
-></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
-</head>
-<body class="min-h-screen font-mono text-zinc-300 antialiased">
-
+{% extends "layout.html" %}
+{% block title %}Akila - Monitoreo continuo de DMARC{% endblock %}
+{% block content %}
 {% macro copy_icon_button(target_id) %}
 <button
   type="button"
   title="Copiar"
   data-copy-target="{{ target_id }}"
   hx-on:click="navigator.clipboard.writeText(document.getElementById(this.dataset.copyTarget).textContent.trim()); this.dataset.copied = '1'; setTimeout(() => { this.dataset.copied = ''; }, 1500)"
-  class="group inline-flex items-center justify-center w-7 h-7 rounded-md border border-zinc-800 text-zinc-500 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors shrink-0"
+  class="group inline-flex items-center justify-center w-7 h-7 rounded-md shadow-sm bg-white text-zinc-400 hover:text-[#474545] transition-colors shrink-0"
 >
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 group-data-[copied=1]:hidden">
     <rect x="9" y="9" width="13" height="13" rx="2"></rect>
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
   </svg>
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 hidden group-data-[copied=1]:block text-emerald-400">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 hidden group-data-[copied=1]:block text-emerald-600">
     <polyline points="20 6 9 17 4 12"></polyline>
   </svg>
 </button>
@@ -42,31 +25,26 @@
   title="Copiar"
   data-copy-target="{{ target_id }}"
   hx-on:click="navigator.clipboard.writeText(document.getElementById(this.dataset.copyTarget).textContent.trim()); this.dataset.copied = '1'; setTimeout(() => { this.dataset.copied = ''; }, 1500)"
-  class="group inline-flex items-center gap-1.5 text-[10px] text-zinc-500 tracking-wide uppercase hover:text-[#ef5184] transition-colors"
+  class="group inline-flex items-center gap-1.5 text-[10px] text-zinc-500 tracking-wide uppercase hover:text-[#474545] transition-colors"
 >
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0 group-data-[copied=1]:hidden">
     <rect x="9" y="9" width="13" height="13" rx="2"></rect>
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
   </svg>
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0 hidden group-data-[copied=1]:block text-emerald-400">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0 hidden group-data-[copied=1]:block text-emerald-600">
     <polyline points="20 6 9 17 4 12"></polyline>
   </svg>
   <span class="group-data-[copied=1]:hidden">Copiar</span>
-  <span class="hidden group-data-[copied=1]:inline text-emerald-400">Copiado</span>
+  <span class="hidden group-data-[copied=1]:inline text-emerald-600">Copiado</span>
 </button>
 {% endmacro %}
-
-  <div class="fixed inset-0 bg-grid pointer-events-none"></div>
-
-  <div class="relative">
-    {% include "partials/header.html" %}
 
     <div class="max-w-4xl mx-auto px-6 py-16">
     <div class="flex items-center justify-between gap-3 mb-1">
       <div class="flex items-center gap-3">
         <a
           href="{{ url_for('monitoring_dashboard', access_token=monitored.access_token) }}"
-          class="inline-flex items-center justify-center w-8 h-8 rounded-md border border-zinc-800 text-zinc-400 hover:border-[#ef5184]/60 hover:text-[#ef5184] transition-colors shrink-0"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-md shadow-sm bg-white text-zinc-500 hover:text-[#474545] transition-colors shrink-0"
           title="Volver al dashboard"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
@@ -74,9 +52,9 @@
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
         </a>
-        <h1 class="text-2xl text-zinc-100 tracking-tight">{{ monitored.domain }}</h1>
+        <h1 class="text-2xl text-zinc-900 tracking-tight">{{ monitored.domain }}</h1>
       </div>
-      <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 shrink-0 {{ 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' if just_registered or monitored.is_active else 'border-zinc-600 text-zinc-500 bg-zinc-500/10' }}">
+      <span class="text-[10px] tracking-wider rounded px-1.5 py-0.5 shrink-0 {{ 'border border-emerald-200 text-emerald-700 bg-emerald-50' if just_registered or monitored.is_active else 'text-zinc-500 bg-zinc-100' }}">
         {% if just_registered %}
           {% if already_existed %}Ya estaba registrado{% else %}registrado{% endif %}
         {% else %}
@@ -86,33 +64,33 @@
     </div>
     <p class="text-[12px] text-zinc-500 mb-6 pl-11">Configuración DMARC sugerida para este dominio</p>
 
-    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
+    <div class="bg-white shadow-sm rounded-md p-4 mb-6">
       <div class="flex items-center justify-between mb-1">
-        <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase">DMARC</h2>
-        <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-500/30 text-amber-400 bg-amber-500/10 shrink-0">REQUERIDO</span>
+        <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase">DMARC</h2>
+        <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-200 text-amber-700 bg-amber-50 shrink-0">REQUERIDO</span>
       </div>
-      <p class="text-[11px] text-zinc-500 uppercase tracking-wide mb-3">Falta un paso: publica este registro DNS</p>
-      <p class="text-[12px] text-zinc-400 leading-relaxed mb-4">
+      <p class="text-[11px] text-zinc-400 uppercase tracking-wide mb-3">Falta un paso: publica este registro DNS</p>
+      <p class="text-[12px] text-zinc-600 leading-relaxed mb-4">
         {% if dns.has_existing_record %}
-          Este dominio ya tiene un registro DMARC — el valor de abajo parte de tu configuración real (remitentes, <code class="text-zinc-300">rua=</code>/<code class="text-zinc-300">ruf=</code>, más nuestra casilla agregada), pero la <strong class="text-zinc-300">política de aplicación empieza en modo conservador</strong> ("sólo monitoreo"), sin importar la que tengas publicada hoy — revisa los controles de abajo antes de reemplazar tu registro actual, para no bajar por accidente una aplicación más estricta que ya tenías.
+          Este dominio ya tiene un registro DMARC — el valor de abajo parte de tu configuración real (remitentes, <code class="text-zinc-700">rua=</code>/<code class="text-zinc-700">ruf=</code>, más nuestra casilla agregada), pero la <strong class="text-zinc-800">política de aplicación empieza en modo conservador</strong> ("sólo monitoreo"), sin importar la que tengas publicada hoy — revisa los controles de abajo antes de reemplazar tu registro actual, para no bajar por accidente una aplicación más estricta que ya tenías.
         {% else %}
-          Este dominio no tiene ningún registro DMARC todavía. Te sugerimos empezar en modo <strong class="text-zinc-300">"sólo monitoreo"</strong> (<code class="text-zinc-300">p=none</code>): no bloquea ni pone en cuarentena ningún correo, sólo activa la recolección de reportes. Puedes endurecerlo más adelante.
+          Este dominio no tiene ningún registro DMARC todavía. Te sugerimos empezar en modo <strong class="text-zinc-800">"sólo monitoreo"</strong> (<code class="text-zinc-700">p=none</code>): no bloquea ni pone en cuarentena ningún correo, sólo activa la recolección de reportes. Puedes endurecerlo más adelante.
         {% endif %}
       </p>
 
       <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[12px] items-center mb-1">
-        <span class="text-zinc-500 uppercase tracking-wide text-[10px]">Tipo</span>
-        <span class="text-zinc-200">{{ dns.type }}</span>
+        <span class="text-zinc-400 uppercase tracking-wide text-[10px]">Tipo</span>
+        <span class="text-zinc-800">{{ dns.type }}</span>
 
-        <span class="text-zinc-500 uppercase tracking-wide text-[10px]">Host / Nombre</span>
+        <span class="text-zinc-400 uppercase tracking-wide text-[10px]">Host / Nombre</span>
         <div class="flex items-center gap-2">
-          <code id="dns-host-value" class="text-zinc-200 bg-zinc-950 border border-zinc-800/80 rounded px-2 py-1 w-fit">{{ dns.host }}</code>
+          <code id="dns-host-value" class="text-zinc-800 bg-zinc-50 rounded px-2 py-1 w-fit">{{ dns.host }}</code>
           {{ copy_icon_button('dns-host-value') }}
         </div>
       </div>
 
-      <div class="mt-4 pt-4 border-t border-zinc-800/70">
-        <span class="block mb-3 text-zinc-500 uppercase tracking-wide text-[10px]">Personalizar política (opcional)</span>
+      <div class="mt-4 pt-4 border-t border-zinc-100">
+        <span class="block mb-3 text-zinc-400 uppercase tracking-wide text-[10px]">Personalizar política (opcional)</span>
         <form
           hx-post="{{ url_for('monitoring_dns_preview') }}"
           hx-target="#dns-value-value"
@@ -124,30 +102,30 @@
           <input type="hidden" name="ruf" value="{{ dns.ruf }}">
 
           <div>
-            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#ef5184]">1.</span> Política de aplicación (p)</span>
-            <p class="text-[10.5px] text-zinc-600 leading-snug mb-2 max-w-md">
+            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#474545]">1.</span> Política de aplicación (p)</span>
+            <p class="text-[10.5px] text-zinc-400 leading-snug mb-2 max-w-md">
               Qué hacer con el correo de este dominio que no pasa SPF/DKIM: "Ninguno" sólo monitorea, "Cuarentena" lo manda a spam, "Rechazar" lo bloquea directamente.
             </p>
             <div class="flex flex-wrap gap-2">
               {% for value, label in [('none', 'Ninguno'), ('quarantine', 'Cuarentena'), ('reject', 'Rechazar')] %}
               <label class="cursor-pointer">
                 <input type="radio" name="p" value="{{ value }}" class="peer sr-only" {% if dns.policy.p == value %}checked{% endif %}>
-                <span class="inline-block text-[11px] uppercase tracking-wide border border-zinc-800 rounded px-3 py-1.5 text-zinc-400 peer-checked:border-[#ef5184]/60 peer-checked:text-[#ef5184] transition-colors">{{ label }}</span>
+                <span class="inline-block text-[11px] uppercase tracking-wide bg-zinc-50 rounded px-3 py-1.5 text-zinc-500 peer-checked:border peer-checked:border-[#474545]/60 peer-checked:text-[#474545] transition-colors">{{ label }}</span>
               </label>
               {% endfor %}
             </div>
           </div>
 
           <div>
-            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#ef5184]">2.</span> Política de subdominios (sp)</span>
-            <p class="text-[10.5px] text-zinc-600 leading-snug mb-2 max-w-md">
+            <span class="block mb-1.5 text-[11px] text-zinc-500"><span class="text-[#474545]">2.</span> Política de subdominios (sp)</span>
+            <p class="text-[10.5px] text-zinc-400 leading-snug mb-2 max-w-md">
               Qué hacer con el correo que llega desde un subdominio (ej. <code class="text-zinc-500">mail.{{ monitored.domain }}</code>) sin su propio registro DMARC — igual que "p", pero sólo para subdominios.
             </p>
             <div class="flex flex-wrap gap-2">
               {% for value, label in [('', 'Igual que p'), ('none', 'Ninguno'), ('quarantine', 'Cuarentena'), ('reject', 'Rechazar')] %}
               <label class="cursor-pointer">
                 <input type="radio" name="sp" value="{{ value }}" class="peer sr-only" {% if dns.policy.sp == value %}checked{% endif %}>
-                <span class="inline-block text-[11px] uppercase tracking-wide border border-zinc-800 rounded px-3 py-1.5 text-zinc-400 peer-checked:border-[#ef5184]/60 peer-checked:text-[#ef5184] transition-colors">{{ label }}</span>
+                <span class="inline-block text-[11px] uppercase tracking-wide bg-zinc-50 rounded px-3 py-1.5 text-zinc-500 peer-checked:border peer-checked:border-[#474545]/60 peer-checked:text-[#474545] transition-colors">{{ label }}</span>
               </label>
               {% endfor %}
             </div>
@@ -155,54 +133,54 @@
 
           <div>
             <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[11px] text-zinc-500"><span class="text-[#ef5184]">3.</span> Porcentaje aplicado (pct)</span>
-              <span id="pct-label" class="text-[11px] text-zinc-300">{{ dns.policy.pct }}%</span>
+              <span class="text-[11px] text-zinc-500"><span class="text-[#474545]">3.</span> Porcentaje aplicado (pct)</span>
+              <span id="pct-label" class="text-[11px] text-zinc-700">{{ dns.policy.pct }}%</span>
             </div>
-            <p class="text-[10.5px] text-zinc-600 leading-snug mb-2 max-w-md">
+            <p class="text-[10.5px] text-zinc-400 leading-snug mb-2 max-w-md">
               A qué porcentaje del correo se le aplica la política de arriba (cuarentena/rechazo) — el resto sólo se monitorea. Útil para subir la aplicación gradual, no de golpe.
             </p>
             <input
               type="range" name="pct" min="0" max="100" step="5" value="{{ dns.policy.pct }}"
               hx-on:input="document.getElementById('pct-label').textContent = this.value + '%'"
-              class="w-full accent-[#ef5184]"
+              class="w-full accent-[#474545]"
             >
           </div>
 
           <div class="flex flex-wrap gap-4">
-            <label class="inline-flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
-              <input type="checkbox" name="adkim" value="s" {% if dns.policy.adkim == 's' %}checked{% endif %} class="accent-[#ef5184]">
-              Alineación DKIM estricta <code class="text-zinc-600">(adkim=s)</code>
+            <label class="inline-flex items-center gap-2 text-[11px] text-zinc-500 cursor-pointer">
+              <input type="checkbox" name="adkim" value="s" {% if dns.policy.adkim == 's' %}checked{% endif %} class="accent-[#474545]">
+              Alineación DKIM estricta <code class="text-zinc-400">(adkim=s)</code>
             </label>
-            <label class="inline-flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
-              <input type="checkbox" name="aspf" value="s" {% if dns.policy.aspf == 's' %}checked{% endif %} class="accent-[#ef5184]">
-              Alineación SPF estricta <code class="text-zinc-600">(aspf=s)</code>
+            <label class="inline-flex items-center gap-2 text-[11px] text-zinc-500 cursor-pointer">
+              <input type="checkbox" name="aspf" value="s" {% if dns.policy.aspf == 's' %}checked{% endif %} class="accent-[#474545]">
+              Alineación SPF estricta <code class="text-zinc-400">(aspf=s)</code>
             </label>
           </div>
         </form>
-        <p class="mt-3 text-[10px] text-zinc-600">
+        <p class="mt-3 text-[10px] text-zinc-400">
           Estos controles sólo actualizan la vista previa de abajo — no publican nada, y no afectan lo que ya verificamos.
         </p>
       </div>
 
       <div class="flex items-center justify-between mt-4 mb-1.5">
-        <span class="text-zinc-500 uppercase tracking-wide text-[10px]">Valor</span>
+        <span class="text-zinc-400 uppercase tracking-wide text-[10px]">Valor</span>
         {{ copy_text_button('dns-value-value') }}
       </div>
-      <pre id="dns-value-value" class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ dns.value }}</pre>
+      <pre id="dns-value-value" class="record overflow-x-auto text-[11px] text-zinc-700 bg-zinc-50 rounded p-2.5">{{ dns.value }}</pre>
 
-      <p class="mt-3 text-[11px] text-zinc-600">
+      <p class="mt-3 text-[11px] text-zinc-400">
         Los primeros reportes tardan entre 24 y 48 horas en llegar — es normal no ver nada todavía.
       </p>
 
       {% include "partials/dns_verify_status.html" %}
     </div>
 
-    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
+    <div class="bg-white shadow-sm rounded-md p-4 mb-6">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase">TLS-RPT</h2>
-        <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-500/30 text-amber-400 bg-amber-500/10 shrink-0">RECOMENDADO</span>
+        <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase">TLS-RPT</h2>
+        <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-amber-200 text-amber-700 bg-amber-50 shrink-0">RECOMENDADO</span>
       </div>
-      <p class="text-[12px] text-zinc-400 leading-relaxed mb-4">
+      <p class="text-[12px] text-zinc-600 leading-relaxed mb-4">
         {% if extra_dns.tls_rpt.has_existing_record %}
           Ya tenías TLS-RPT publicado — copiamos tu valor y le agregamos nuestra casilla de monitoreo.
         {% else %}
@@ -210,52 +188,52 @@
         {% endif %}
       </p>
       <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[12px] items-center mb-1">
-        <span class="text-zinc-500 uppercase tracking-wide text-[10px]">Host / Nombre</span>
+        <span class="text-zinc-400 uppercase tracking-wide text-[10px]">Host / Nombre</span>
         <div class="flex items-center gap-2">
-          <code id="tls-rpt-host" class="text-zinc-200 bg-zinc-950 border border-zinc-800/80 rounded px-2 py-1 w-fit">{{ extra_dns.tls_rpt.host }}</code>
+          <code id="tls-rpt-host" class="text-zinc-800 bg-zinc-50 rounded px-2 py-1 w-fit">{{ extra_dns.tls_rpt.host }}</code>
           {{ copy_icon_button('tls-rpt-host') }}
         </div>
       </div>
       <div class="flex items-center justify-between mt-3 mb-1.5">
-        <span class="text-zinc-500 uppercase tracking-wide text-[10px]">Valor</span>
+        <span class="text-zinc-400 uppercase tracking-wide text-[10px]">Valor</span>
         {{ copy_text_button('tls-rpt-value') }}
       </div>
-      <pre id="tls-rpt-value" class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ extra_dns.tls_rpt.value }}</pre>
+      <pre id="tls-rpt-value" class="record overflow-x-auto text-[11px] text-zinc-700 bg-zinc-50 rounded p-2.5">{{ extra_dns.tls_rpt.value }}</pre>
 
       {% include "partials/tls_rpt_verify_status.html" %}
     </div>
 
-    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
+    <div class="bg-white shadow-sm rounded-md p-4 mb-6">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase">SPF</h2>
+        <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase">SPF</h2>
         {% if extra_dns.spf.record %}
-          <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-emerald-500/30 text-emerald-400 bg-emerald-500/10 shrink-0">CONFIGURADO</span>
+          <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-emerald-200 text-emerald-700 bg-emerald-50 shrink-0">CONFIGURADO</span>
         {% else %}
-          <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-rose-500/30 text-rose-400 bg-rose-500/10 shrink-0">FALTA</span>
+          <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 border-rose-200 text-rose-700 bg-rose-50 shrink-0">FALTA</span>
         {% endif %}
       </div>
       {% if extra_dns.spf.record %}
-        <p class="text-[12px] text-zinc-400 leading-relaxed mb-3">
+        <p class="text-[12px] text-zinc-600 leading-relaxed mb-3">
           Ya tienes un registro SPF publicado en la raíz del dominio — no lo reemplaces desde aquí, edítalo con cuidado si necesitas agregar un proveedor de envío nuevo (uno mal armado puede rechazar correo legítimo).
         </p>
-        <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ extra_dns.spf.record }}</pre>
+        <pre class="record overflow-x-auto text-[11px] text-zinc-700 bg-zinc-50 rounded p-2.5">{{ extra_dns.spf.record }}</pre>
       {% else %}
-        <p class="text-[12px] text-zinc-400 leading-relaxed mb-3">
-          No tiene SPF todavía. No hay un valor único que sirva para todos — tiene que incluir exactamente los servidores que usas para enviar correo desde este dominio; si falta alguno, ese correo puede llegar a spam o rechazarse. Junta la lista completa con los puntos de abajo, y publícalo como TXT en <code class="text-zinc-300">{{ monitored.domain }}</code> (mismo lugar que el DMARC, pero sin el <code class="text-zinc-300">_dmarc.</code> delante).
+        <p class="text-[12px] text-zinc-600 leading-relaxed mb-3">
+          No tiene SPF todavía. No hay un valor único que sirva para todos — tiene que incluir exactamente los servidores que usas para enviar correo desde este dominio; si falta alguno, ese correo puede llegar a spam o rechazarse. Junta la lista completa con los puntos de abajo, y publícalo como TXT en <code class="text-zinc-700">{{ monitored.domain }}</code> (mismo lugar que el DMARC, pero sin el <code class="text-zinc-700">_dmarc.</code> delante).
         </p>
 
         {% if extra_dns.spf.provider.hosts %}
           <p class="text-[11px] text-zinc-500 mb-1.5">Tus servidores de correo entrante (MX) — pueden darte una pista de tu proveedor real de envío:</p>
           <div class="flex flex-wrap gap-1.5 mb-3">
             {% for host in extra_dns.spf.provider.hosts %}
-              <span class="text-[11px] bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-zinc-300">{{ host }}</span>
+              <span class="text-[11px] bg-zinc-50 rounded px-2 py-1 text-zinc-700">{{ host }}</span>
             {% endfor %}
           </div>
           {% if extra_dns.spf.provider.label %}
-            <p class="text-[12px] text-zinc-400 leading-relaxed mb-2">
-              Reconocimos que corresponden a <strong class="text-zinc-300">{{ extra_dns.spf.provider.label }}</strong>. Si también es tu proveedor para <strong class="text-zinc-300">enviar</strong> correo (no siempre es el mismo), este es un punto de partida:
+            <p class="text-[12px] text-zinc-600 leading-relaxed mb-2">
+              Reconocimos que corresponden a <strong class="text-zinc-800">{{ extra_dns.spf.provider.label }}</strong>. Si también es tu proveedor para <strong class="text-zinc-800">enviar</strong> correo (no siempre es el mismo), este es un punto de partida:
             </p>
-            <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5 mb-3">v=spf1 {{ extra_dns.spf.provider.include }} ~all</pre>
+            <pre class="record overflow-x-auto text-[11px] text-zinc-700 bg-zinc-50 rounded p-2.5 mb-3">v=spf1 {{ extra_dns.spf.provider.include }} ~all</pre>
           {% else %}
             <p class="text-[11px] text-zinc-500 leading-relaxed mb-3">
               No los reconocimos automáticamente — busca esos nombres de servidor en internet o revisa el panel de tu proveedor de correo para identificar a quién corresponden.
@@ -265,68 +243,68 @@
 
         <p class="text-[11px] text-zinc-500 leading-relaxed mb-1.5">Antes de publicar, revisa si además envías correo desde:</p>
         <ul class="text-[11px] text-zinc-500 leading-relaxed list-disc list-inside space-y-0.5 mb-3">
-          <li>Tu proveedor de correo principal (Google Workspace, Zoho, Microsoft 365, etc.) — cada uno tiene su propio <code class="text-zinc-600">include:</code>.</li>
+          <li>Tu proveedor de correo principal (Google Workspace, Zoho, Microsoft 365, etc.) — cada uno tiene su propio <code class="text-zinc-400">include:</code>.</li>
           <li>Herramientas de marketing o transaccionales (Mailchimp, SendGrid, Postmark, HubSpot, etc.).</li>
-          <li>Un servidor propio (VPS, backend de tu app) — necesitas su IP fija (<code class="text-zinc-600">ip4:</code>).</li>
+          <li>Un servidor propio (VPS, backend de tu app) — necesitas su IP fija (<code class="text-zinc-400">ip4:</code>).</li>
         </ul>
         <p class="text-[11px] text-zinc-500 leading-relaxed mb-1">Ejemplo combinando dos fuentes (Google Workspace + Mailchimp):</p>
-        <pre class="record overflow-x-auto text-[11px] text-zinc-500 bg-zinc-950 border border-zinc-800/70 rounded p-2">v=spf1 include:_spf.google.com include:servers.mcsv.net ~all</pre>
+        <pre class="record overflow-x-auto text-[11px] text-zinc-600 bg-zinc-50 rounded p-2">v=spf1 include:_spf.google.com include:servers.mcsv.net ~all</pre>
       {% endif %}
     </div>
 
-    <div class="bg-zinc-900/50 border border-zinc-800 rounded-md p-4 mb-6">
-      <h2 class="text-xs tracking-[0.15em] text-zinc-400 uppercase mb-3">Otros protocolos</h2>
+    <div class="bg-white shadow-sm rounded-md p-4 mb-6">
+      <h2 class="text-xs tracking-[0.15em] text-zinc-500 uppercase mb-3">Otros protocolos</h2>
 
-      <div class="mb-4 pb-4 border-b border-zinc-800/60">
+      <div class="mb-4 pb-4 border-b border-zinc-100">
         <div class="flex items-center justify-between mb-1.5">
-          <span class="text-[11px] text-zinc-300">BIMI</span>
-          <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 shrink-0 {{ 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' if extra_dns.bimi.record else 'border-zinc-600 text-zinc-400 bg-zinc-500/10' }}">
+          <span class="text-[11px] text-zinc-700">BIMI</span>
+          <span class="text-[10px] tracking-wider rounded px-1.5 py-0.5 shrink-0 {{ 'border border-emerald-200 text-emerald-700 bg-emerald-50' if extra_dns.bimi.record else 'text-zinc-500 bg-zinc-100' }}">
             {{ 'CONFIGURADO' if extra_dns.bimi.record else 'OPCIONAL' }}
           </span>
         </div>
         {% if extra_dns.bimi.record %}
-          <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ extra_dns.bimi.record }}</pre>
+          <pre class="record overflow-x-auto text-[11px] text-zinc-700 bg-zinc-50 rounded p-2.5">{{ extra_dns.bimi.record }}</pre>
         {% else %}
           <p class="text-[11px] text-zinc-500 leading-relaxed">
-            Muestra el logo de tu marca junto al correo. Necesitas un logo en SVG ya hospedado (y a veces un certificado VMC) antes de publicar el TXT en <code class="text-zinc-600">default._bimi.{{ monitored.domain }}</code>, y tu DMARC en cuarentena o rechazo — no sirve con <code class="text-zinc-600">p=none</code>.
+            Muestra el logo de tu marca junto al correo. Necesitas un logo en SVG ya hospedado (y a veces un certificado VMC) antes de publicar el TXT en <code class="text-zinc-400">default._bimi.{{ monitored.domain }}</code>, y tu DMARC en cuarentena o rechazo — no sirve con <code class="text-zinc-400">p=none</code>.
           </p>
         {% endif %}
       </div>
 
-      <div class="mb-4 pb-4 border-b border-zinc-800/60">
+      <div class="mb-4 pb-4 border-b border-zinc-100">
         <div class="flex items-center justify-between mb-1.5">
-          <span class="text-[11px] text-zinc-300">MTA-STS</span>
-          <span class="text-[10px] tracking-wider border rounded px-1.5 py-0.5 shrink-0 {{ 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' if extra_dns.mta_sts.record else 'border-zinc-600 text-zinc-400 bg-zinc-500/10' }}">
+          <span class="text-[11px] text-zinc-700">MTA-STS</span>
+          <span class="text-[10px] tracking-wider rounded px-1.5 py-0.5 shrink-0 {{ 'border border-emerald-200 text-emerald-700 bg-emerald-50' if extra_dns.mta_sts.record else 'text-zinc-500 bg-zinc-100' }}">
             {{ 'CONFIGURADO' if extra_dns.mta_sts.record else 'OPCIONAL' }}
           </span>
         </div>
         {% if extra_dns.mta_sts.record %}
-          <pre class="record overflow-x-auto text-[11px] text-zinc-300 bg-zinc-950 border border-zinc-800/80 rounded p-2.5">{{ extra_dns.mta_sts.record }}</pre>
+          <pre class="record overflow-x-auto text-[11px] text-zinc-700 bg-zinc-50 rounded p-2.5">{{ extra_dns.mta_sts.record }}</pre>
         {% else %}
           <p class="text-[11px] text-zinc-500 leading-relaxed">
-            Obliga a que el correo entrante viaje siempre cifrado. Necesitas publicar un TXT en <code class="text-zinc-600">_mta-sts.{{ monitored.domain }}</code> y además hospedar un archivo de política en <code class="text-zinc-600">https://mta-sts.{{ monitored.domain }}/.well-known/mta-sts.txt</code> — no es sólo DNS.
+            Obliga a que el correo entrante viaje siempre cifrado. Necesitas publicar un TXT en <code class="text-zinc-400">_mta-sts.{{ monitored.domain }}</code> y además hospedar un archivo de política en <code class="text-zinc-400">https://mta-sts.{{ monitored.domain }}/.well-known/mta-sts.txt</code> — no es sólo DNS.
           </p>
         {% endif %}
       </div>
 
-      <div class="mb-4 pb-4 border-b border-zinc-800/60">
-        <span class="block mb-1.5 text-[11px] text-zinc-300">DKIM</span>
+      <div class="mb-4 pb-4 border-b border-zinc-100">
+        <span class="block mb-1.5 text-[11px] text-zinc-700">DKIM</span>
         <p class="text-[11px] text-zinc-500 leading-relaxed">
-          No lo controlamos nosotros ni tú desde acá — lo genera tu proveedor de correo (Google Workspace, Microsoft 365, etc.). Revisa su panel de administración: te va a dar un TXT para publicar en <code class="text-zinc-600">&lt;selector&gt;._domainkey.{{ monitored.domain }}</code>.
+          No lo controlamos nosotros ni tú desde acá — lo genera tu proveedor de correo (Google Workspace, Microsoft 365, etc.). Revisa su panel de administración: te va a dar un TXT para publicar en <code class="text-zinc-400">&lt;selector&gt;._domainkey.{{ monitored.domain }}</code>.
         </p>
       </div>
 
       <div>
-        <span class="block mb-1.5 text-[11px] text-zinc-300">DNSSEC</span>
+        <span class="block mb-1.5 text-[11px] text-zinc-700">DNSSEC</span>
         <p class="text-[11px] text-zinc-500 leading-relaxed">
-          No es un registro TXT — se activa con un botón en el panel de tu proveedor de DNS (o registrador), y agrega un registro <code class="text-zinc-600">DS</code>/<code class="text-zinc-600">DNSKEY</code> automáticamente. Búscalo como "Habilitar DNSSEC" en la configuración de tu dominio.
+          No es un registro TXT — se activa con un botón en el panel de tu proveedor de DNS (o registrador), y agrega un registro <code class="text-zinc-400">DS</code>/<code class="text-zinc-400">DNSKEY</code> automáticamente. Búscalo como "Habilitar DNSSEC" en la configuración de tu dominio.
         </p>
       </div>
     </div>
 
     <a
       href="{{ url_for('monitoring_dashboard', access_token=monitored.access_token) }}"
-      class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 text-zinc-950 text-sm font-semibold tracking-wide transition-colors"
+      class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-[#474545] hover:bg-[#474545]/90 text-white text-sm font-semibold tracking-wide transition-colors"
     >
       Ir al monitoreo
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0">
@@ -335,7 +313,4 @@
       </svg>
     </a>
     </div>
-  </div>
-
-</body>
-</html>
+{% endblock %}

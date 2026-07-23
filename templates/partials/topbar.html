@@ -1,0 +1,48 @@
+<header class="print:hidden sticky top-0 z-20 flex items-center justify-between gap-3 bg-white/90 backdrop-blur px-4 sm:px-6 py-3">
+  <label for="sidebar-toggle" class="lg:hidden inline-flex items-center justify-center text-zinc-500 hover:text-[#474545] cursor-pointer transition-colors">
+    <svg viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-4 h-3">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M0.583252 1C0.583252 0.585788 0.919038 0.25 1.33325 0.25H14.6666C15.0808 0.25 15.4166 0.585786 15.4166 1C15.4166 1.41421 15.0808 1.75 14.6666 1.75L1.33325 1.75C0.919038 1.75 0.583252 1.41422 0.583252 1ZM0.583252 11C0.583252 10.5858 0.919038 10.25 1.33325 10.25L14.6666 10.25C15.0808 10.25 15.4166 10.5858 15.4166 11C15.4166 11.4142 15.0808 11.75 14.6666 11.75L1.33325 11.75C0.919038 11.75 0.583252 11.4142 0.583252 11ZM1.33325 5.25C0.919038 5.25 0.583252 5.58579 0.583252 6C0.583252 6.41421 0.919038 6.75 1.33325 6.75L7.99992 6.75C8.41413 6.75 8.74992 6.41421 8.74992 6C8.74992 5.58579 8.41413 5.25 7.99992 5.25L1.33325 5.25Z" fill="currentColor"></path>
+    </svg>
+  </label>
+  <span class="hidden lg:block"></span>
+
+  {% if current_user.is_authenticated %}
+    <details class="relative">
+      <summary class="list-none flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] text-zinc-600 tracking-wide cursor-pointer hover:text-[#474545] transition-colors">
+        <span class="w-5 h-5 rounded-full bg-[#474545]/15 text-[#474545] flex items-center justify-center text-[10px] font-semibold uppercase shrink-0">{{ current_user.email[0] }}</span>
+        <span class="max-w-[160px] truncate">{{ current_user.email }}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 shrink-0">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </summary>
+      <div class="absolute right-0 mt-2 w-40 rounded-md bg-white shadow-xl overflow-hidden z-30">
+        <a href="{{ url_for('account') }}" class="w-full text-left px-3 py-2.5 text-[11px] text-zinc-600 hover:bg-zinc-50 hover:text-[#474545] transition-colors flex items-center gap-2 border-b border-zinc-100">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Perfil
+        </a>
+        <form method="POST" action="{{ url_for('auth_logout') }}">
+          <button type="submit" class="w-full text-left px-3 py-2.5 text-[11px] text-zinc-600 hover:bg-zinc-50 hover:text-[#474545] transition-colors inline-flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Salir
+          </button>
+        </form>
+      </div>
+    </details>
+  {% else %}
+    <a href="{{ url_for('auth_login') }}" class="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 tracking-[0.15em] uppercase shadow-sm bg-white rounded-md px-3 py-1.5 hover:text-[#474545] transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+        <polyline points="10 17 15 12 10 7"></polyline>
+        <line x1="15" y1="12" x2="3" y2="12"></line>
+      </svg>
+      Ingresar
+    </a>
+  {% endif %}
+</header>

@@ -1,38 +1,13 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Akila - Auditoría Dmarc </title>
-<link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace-theme-default.css">
-<script>window.paceOptions = { minTime: 100, ghostTime: 50, catchupTime: 100, initialRate: 0.3 };</script>
-<script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script
-  src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
-  integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
-  crossorigin="anonymous"
-></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
-{% include "partials/pdf_download_script.html" %}
-</head>
-<body class="min-h-screen font-mono text-zinc-300 antialiased [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
-
-  <div class="fixed inset-0 bg-grid pointer-events-none print:hidden"></div>
-
-  <div class="relative">
-
-    {% include "partials/header.html" %}
-
+{% extends "layout.html" %}
+{% block title %}Akila - Auditoría Dmarc{% endblock %}
+{% block body_class %} [print-color-adjust:exact] [-webkit-print-color-adjust:exact]{% endblock %}
+{% block content %}
     <!-- Hero / buscador -->
     <section class="max-w-5xl mx-auto px-6 pt-16 pb-10 print:hidden">
-      <h1 class="text-2xl sm:text-3xl text-zinc-100 tracking-tight">
-        Auditoría de autenticación de correo<span class="text-[#ef5184] cursor">_</span>
+      <h1 class="text-2xl sm:text-3xl text-zinc-900 tracking-tight">
+        Auditoría de autenticación de correo<span class="text-[#474545] cursor">_</span>
       </h1>
-      <p class="mt-2 text-[11px] text-zinc-400 tracking-wide">SPF <span class="text-[#ef5184]">·</span> DMARC <span class="text-[#ef5184]">·</span> DKIM <span class="text-[#ef5184]">·</span> MX <span class="text-[#ef5184]">·</span> DNSSEC <span class="text-[#ef5184]">·</span> MTA-STS <span class="text-[#ef5184]">·</span> TLS-RPT <span class="text-[#ef5184]">·</span> BIMI</p>
+      <p class="mt-2 text-[11px] text-zinc-500 tracking-wide">SPF <span class="text-[#474545]">·</span> DMARC <span class="text-[#474545]">·</span> DKIM <span class="text-[#474545]">·</span> MX <span class="text-[#474545]">·</span> DNSSEC <span class="text-[#474545]">·</span> MTA-STS <span class="text-[#474545]">·</span> TLS-RPT <span class="text-[#474545]">·</span> BIMI</p>
       <p class="mt-3 text-sm text-zinc-500 max-w-xl leading-relaxed">
         Ingresa un dominio y consulta en tiempo real el estado de sus registros de seguridad de correo contra DNS.
       </p>
@@ -47,8 +22,8 @@
         hx-indicator="#loading, #results-wrapper"
         hx-disabled-elt="#submit-btn, #domain-input"
       >
-        <div class="flex-1 flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded-md px-4 py-3 focus-within:border-[#ef5184]/60 transition-colors">
-          <span class="text-[#ef5184] select-none">$</span>
+        <div class="flex-1 flex items-center gap-2 bg-white rounded-md px-4 py-3 border border-zinc-200 focus-within:border-[#474545]/60 transition-colors">
+          <span class="text-[#474545] select-none">$</span>
           <input
             id="domain-input"
             name="domain"
@@ -58,13 +33,13 @@
             title="Ingresa un dominio válido, por ejemplo: tudominio.com"
             placeholder="tudominio.com"
             value="{{ domain }}"
-            class="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-600 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex-1 bg-transparent outline-none text-zinc-900 placeholder:text-zinc-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
         <button
           id="submit-btn"
           type="submit"
-          class="px-6 py-3 rounded-md bg-[#ef5184] hover:bg-[#ef5184]/90 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 text-sm font-semibold tracking-wide transition-colors inline-flex items-center justify-center gap-2"
+          class="px-6 py-3 rounded-md bg-[#474545] hover:bg-[#474545]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold tracking-wide transition-colors inline-flex items-center justify-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0">
             <circle cx="11" cy="11" r="7"></circle>
@@ -75,14 +50,14 @@
       </form>
 
       <!-- Indicador de carga: htmx agrega htmx-request a #loading mientras la petición está en curso -->
-      <div id="loading" class="htmx-indicator scan-panel mt-6 rounded-md border border-zinc-800 bg-zinc-900/60 overflow-hidden">
-        <div class="flex items-center gap-2 px-3.5 py-2.5 border-b border-zinc-800/70 bg-zinc-950/50">
+      <div id="loading" class="htmx-indicator scan-panel mt-6 rounded-md shadow-sm bg-white overflow-hidden">
+        <div class="flex items-center gap-2 px-3.5 py-2.5 border-b border-zinc-100 bg-zinc-50">
           <span class="w-2.5 h-2.5 rounded-full bg-rose-400/80"></span>
           <span class="w-2.5 h-2.5 rounded-full bg-amber-400/80"></span>
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-400/80"></span>
           <span class="ml-1.5 text-[10px] tracking-[0.2em] text-zinc-500 uppercase">auditoría en curso</span>
-          <span class="ml-auto flex items-center gap-1.5 text-[10px] tracking-[0.2em] text-[#ef5184] uppercase">
-            <span class="scan-live-dot w-1.5 h-1.5 rounded-full bg-[#ef5184]"></span>
+          <span class="ml-auto flex items-center gap-1.5 text-[10px] tracking-[0.2em] text-[#474545] uppercase">
+            <span class="scan-live-dot w-1.5 h-1.5 rounded-full bg-[#474545]"></span>
             live
           </span>
         </div>
@@ -109,8 +84,4 @@
         {{ result_html | safe }}
       {% endif %}
     </section>
-
-  </div>
-
-</body>
-</html>
+{% endblock %}
